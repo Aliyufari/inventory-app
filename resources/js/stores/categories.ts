@@ -17,6 +17,22 @@ export const useCategory = defineStore('categories', {
       this.loading = true
       this.error = null
 
+      // try {
+      //   const { data } = await axios.get(route('categories.index', { page }))
+      //   this.categories = data.categories.data || []
+      //   console.log("Eroor: " + data.categories);
+        
+      //   this.pagination = {
+      //     links: data.categories.links,
+      //     meta: data.categories.meta,
+      //   }
+      // } catch (error: any) {
+      //   console.error('Error fetching categories:', error)
+      //   this.error = error.message || 'Failed to fetch categories'
+      // } finally {
+      //   this.loading = false
+      // }
+
       try {
         const { data } = await axios.get(route('categories.index', { page }))
         this.categories = data.categories.data || []

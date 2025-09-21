@@ -3,7 +3,7 @@ import { computed, onMounted } from "vue"
 import { Head, useForm, usePage } from "@inertiajs/vue3"
 import AppLayout from "@/layouts/AppLayout.vue"
 import CategoryLayout from "@/layouts/categories/Layout.vue"
-import { type BreadcrumbItem, type SharedData, type User } from "@/types"
+import { Category, type BreadcrumbItem, type SharedData, type User } from "@/types"
 import ComponentCard from "@/components/ui/card/ComponentCard.vue"
 import CategoriesTable from "@/components/ui/table/CategoriesTable.vue"
 import AddCategory from "@/pages/categories/AddCategory.vue"
@@ -15,6 +15,14 @@ import { useCategory } from "@/stores/categories"
 import { Section } from "lucide-vue-next"
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: "Manage categories", href: "/categories" }]
+
+interface Props {
+  mustVerifyEmail: boolean;
+  status?: string;
+  categories?: Category | unknown[];
+}
+
+defineProps<Props>();
 
 const page = usePage<SharedData>()
 const user = page.props.auth.user as User
@@ -48,7 +56,7 @@ onMounted(() => {
 
       <div class="space-y-5 sm:space-y-6">
         <ComponentCard>
-          <CategoriesTable />
+          <CategoriesTable :data="categories" />
         </ComponentCard>
       </div>
 

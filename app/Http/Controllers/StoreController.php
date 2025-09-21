@@ -15,13 +15,17 @@ class StoreController extends Controller
     public function index()
     {
         $stores = Store::latest()
-            ->paginate(10)->through(fn($store) => [
+            ->paginate(15)->through(fn($store) => [
                 'id' => $store->id,
                 'name' => $store->name,
                 'description' => $store->description,
                 'created_at' => $store->created_at,
                 'updated_at' => $store->updated_at,
             ]);
+
+        if (request()->wantsJson()) {
+            return response()->json(['stores' => $stores]);
+        }
 
         return Inertia::render('stores/Index', [
             'stores' => $stores,

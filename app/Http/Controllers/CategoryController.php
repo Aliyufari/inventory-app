@@ -23,6 +23,10 @@ class CategoryController extends Controller
                 'updated_at' => $category->updated_at,
             ]);
 
+        if (request()->wantsJson()) {
+            return response()->json(['categories' => $categories]);
+        }
+
         return Inertia::render('categories/Index', [
             'categories' => $categories,
         ]);

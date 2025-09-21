@@ -18,7 +18,7 @@ class ProductController extends Controller
         // Eager-load store and categories to avoid N+1
         $products = Product::with(['store', 'categories'])
             ->latest()
-            ->paginate(10)
+            ->paginate(15)
             ->through(fn($product) => [
                 'id' => $product->id,
                 'name' => $product->name,

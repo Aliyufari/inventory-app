@@ -12,7 +12,7 @@ import ViewProduct from "@/pages/products/ViewProduct.vue";
 import DeleteProduct from "@/pages/products/DeleteProduct.vue";
 import { Button } from "@/components/ui/button";
 import { useProduct } from "@/stores/products";
-import { Box } from "lucide-vue-next";
+import { BriefcaseMedical } from "lucide-vue-next";
 
 interface Props {
   mustVerifyEmail: boolean;
@@ -52,7 +52,7 @@ onMounted(() => {
 
     <ProductLayout>
       <template #button>
-        <Button @click="productStore.openModal('add')"><Box class="-mr-2" />+ Add Product</Button>
+        <Button @click="productStore.openModal('add')"><BriefcaseMedical class="-mr-2" />+ Add Product</Button>
       </template>
 
 

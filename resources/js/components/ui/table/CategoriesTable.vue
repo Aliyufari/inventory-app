@@ -3,7 +3,8 @@ import { useCategory } from '@/stores/categories'
 import { computed } from 'vue';
 
 const categoryStore = useCategory()
-const categories = computed(() => categoryStore.categories)
+console.log("Error " + categoryStore.categories);
+
 </script>
 
 <template>
@@ -21,7 +22,7 @@ const categories = computed(() => categoryStore.categories)
 
         <tbody class="divide-y divide-gray-200">
           <tr
-            v-for="(category, index) in categories"
+            v-for="(category, index) in categoryStore.categories"
             :key="category.id"
           >
             <!-- Index -->

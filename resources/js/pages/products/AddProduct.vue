@@ -148,7 +148,7 @@ const addProduct = (e: Event) => {
             <Textarea
               id="description"
               v-model="form.description"
-              placeholder="How to use"
+              placeholder="Description"
             />
             <InputError :message="form.errors.description" />
           </div>
