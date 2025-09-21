@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import { useStore } from '@/stores/stores'
+import type { Store } from '@/types'
+
+defineProps<{
+  stores: Store[]
+}>()
 
 const storeStore = useStore()
 </script>
@@ -18,17 +23,10 @@ const storeStore = useStore()
         </thead>
 
         <tbody class="divide-y divide-gray-200">
-          <tr
-            v-for="(store, index) in storeStore.stores"
-            :key="store.id"
-          >
-            <!-- Index -->
+          <!-- Stores from props -->
+          <tr v-for="(store, index) in stores" :key="store.id">
             <td class="px-5 py-4">{{ index + 1 }}</td>
-
-            <!-- Name -->
             <td class="px-5 py-4 whitespace-nowrap">{{ store.name }}</td>
-
-            <!-- Description -->
             <td class="px-5 py-4 whitespace-nowrap">{{ store.description }}</td>
 
             <!-- Actions -->
@@ -65,7 +63,7 @@ const storeStore = useStore()
               Loading stores...
             </td>
           </tr>
-          <tr v-else-if="!storeStore.loading && !storeStore.stores?.length">
+          <tr v-else-if="!storeStore.loading && !props.stores.length">
             <td colspan="6" class="px-5 py-4 text-center text-gray-500">
               No store found
             </td>

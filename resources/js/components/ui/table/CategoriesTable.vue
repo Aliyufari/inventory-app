@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useCategory } from '@/stores/categories'
+import { computed } from 'vue';
 
 const categoryStore = useCategory()
+const categories = computed(() => categoryStore.categories)
 </script>
 
 <template>
@@ -19,7 +21,7 @@ const categoryStore = useCategory()
 
         <tbody class="divide-y divide-gray-200">
           <tr
-            v-for="(category, index) in categoryStore.categories"
+            v-for="(category, index) in categories"
             :key="category.id"
           >
             <!-- Index -->

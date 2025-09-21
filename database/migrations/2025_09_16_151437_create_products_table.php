@@ -13,15 +13,38 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Schema::create('products', function (Blueprint $table) {
+        //     $table->uuid('id')->primary();
+        //     $table->string('name');
+        //     $table->decimal('price', 10, 2);
+        //     $table->integer('quantity');
+        //     $table->string('brand');
+        //     $table->foreignIdFor(Store::class, 'store_id');
+        //     $table->foreignIdFor(Category::class, 'category_id');
+        //     $table->string('description')->nullable();
+        //     $table->timestamps();
+        // });
+
         Schema::create('products', function (Blueprint $table) {
             $table->uuid('id')->primary();
+
+            // Basic product info
             $table->string('name');
-            $table->decimal('price', 10, 2);
-            $table->integer('quantity');
-            $table->string('brand');
-            $table->foreignIdFor(Store::class, 'store_id');
-            $table->foreignIdFor(Category::class, 'category_id');
-            $table->string('description')->nullable();
+            $table->string('brand')->nullable();
+            $table->decimal('price', 10, 2); // price per base unit
+            $table->integer('quantity')->default(0); // always store in base units
+
+            // Unit & conversion handling
+            $table->string('unit')->default('pcs'); // base unit, e.g., tablet, bottle
+            $table->integer('units_per_packet')->nullable(); // e.g., 10 tablets per strip
+            $table->integer('packets_per_carton')->nullable(); // e.g., 10 strips per carton
+
+            // Relationships
+            $table->foreignIdFor(Store::class, 'store_id')->constrained()->cascadeOnDelete();
+
+            // Extra info
+            $table->text('description')->nullable();
+
             $table->timestamps();
         });
     }

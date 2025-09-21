@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Inertia\Inertia;
 use App\Models\Product;
+use Illuminate\Support\Facades\Log;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 
@@ -14,24 +15,29 @@ class ProductController extends Controller
      */
     public function index()
     {
-        $products = Product::paginate(10)->through(fn($product) => [
-            'id' => $product->id,
-            'name' => $product->name,
-            'price' => $product->price,
-            'quantity' => $product->quantity,
-            'brand' => $product->brand,
-            'description' => $product->description,
-            'store' => [
-                'id' => $product->store->id,
-                'name' => $product->store->name,
-            ],
-            'category' => [
-                'id' => $product->category->id,
-                'name' => $product->category->name,
-            ],
-            'created_at' => $product->created_at,
-            'updated_at' => $product->updated_at,
-        ]);
+        // Eager-load store and categories to avoid N+1
+        $products = Product::with(['store', 'categories'])
+            ->paginate(10)
+            ->through(fn($product) => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'price' => $product->price,
+                'quantity' => $product->quantity,
+                'brand' => $product->brand,
+                'description' => $product->description,
+                'store' => $product->store
+                    ? [
+                        'id' => $product->store->id,
+                        'name' => $product->store->name,
+                    ]
+                    : null,
+                'categories' => $product->categories->map(fn($c) => [
+                    'id' => $c->id,
+                    'name' => $c->name,
+                ]),
+                'created_at' => $product->created_at,
+                'updated_at' => $product->updated_at,
+            ]);
 
         if (request()->wantsJson()) {
             return response()->json(['products' => $products]);
@@ -52,17 +58,21 @@ class ProductController extends Controller
 
             $product = Product::create($data);
 
-            // return to_route('users.index');
+            if (isset($data['category_ids'])) {
+                $product->categories()->sync($data['category_ids']);
+            }
 
             return redirect()->back()->with([
                 'status' => true,
                 'message' => 'Product added successfully',
-                'product' => $product
+                'product_id' => $product->id
             ]);
         } catch (\Exception $e) {
+            Log::error('Product store error: ' . $e->getMessage());
+
             return redirect()->back()->withErrors([
                 'status' => false,
-                'errors' => $e->getMessage()
+                'errors' => 'Something went wrong while adding the product.'
             ]);
         }
     }
@@ -84,18 +94,24 @@ class ProductController extends Controller
             $data = $request->validated();
 
             $product->update($data);
-            $product->refresh();
-            // return to_route('users.index');
+
+            if (isset($data['category_ids'])) {
+                $product->categories()->sync($data['category_ids']);
+            }
+
+            $product->refresh()->load('categories');
 
             return redirect()->back()->with([
                 'status' => true,
-                'message' => 'Product added successfully',
+                'message' => 'Product updated successfully',
                 'product' => $product
             ]);
         } catch (\Exception $e) {
+            Log::error('Product update error: ' . $e->getMessage());
+
             return redirect()->back()->withErrors([
                 'status' => false,
-                'errors' => $e->getMessage()
+                'errors' => 'Something went wrong while updating the product.'
             ]);
         }
     }

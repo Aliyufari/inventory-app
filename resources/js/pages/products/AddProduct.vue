@@ -16,7 +16,9 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select } from '@/components/ui/select'
+import MultiSelect from '@/components/ui/multiselect/MultiSelect.vue'
+import Select from '@/components/ui/select/Select.vue'
+import Textarea from '@/components/ui/textarea/Textarea.vue'
 
 // Pinia store
 const productStore = useProduct()
@@ -24,7 +26,7 @@ const productStore = useProduct()
 // Form state
 const form = useForm({
   name: '',
-  category_id: '',
+  category_ids: [] as string[], // updated: multiple categories
   price: '',
   brand: '',
   quantity: '',
@@ -33,17 +35,15 @@ const form = useForm({
 })
 
 // Options for selects
-const categories = ref<{ label: string; value: number }[]>([])
-const stores = ref<{ label: string; value: number }[]>([])
+const categories = ref<{ label: string; value: string }[]>([])
+const stores = ref<{ label: string; value: string }[]>([])
 
 onMounted(async () => {
   try {
     const [categoriesRes, storesRes] = await Promise.all([
-      axios.get(route('categories.index')),
-      axios.get(route('stores.index'))
+      axios.get(route('categories.api')),
+      axios.get(route('stores.api'))
     ])
-
-    console.log("Debug: ", categoriesRes.data.categories, storesRes.data.stores);
 
     categories.value = categoriesRes.data.categories.map((category: any) => ({
       label: category.name.charAt(0).toUpperCase() + category.name.slice(1),
@@ -77,13 +77,14 @@ const addProduct = (e: Event) => {
 }
 </script>
 
+
 <template>
   <div class="space-y-6">
     <Dialog 
       :open="productStore.modalType === 'add'" 
       @update:open="val => { if (!val) productStore.closeModal() }"
     >
-      <DialogContent>
+      <DialogContent class="sm:max-w-2xl max-w-[calc(100%-2rem)]">
         <form class="space-y-6" @submit="addProduct">
           <DialogHeader class="space-y-3">
             <DialogTitle>Add product</DialogTitle>
@@ -96,23 +97,30 @@ const addProduct = (e: Event) => {
             <InputError :message="form.errors.name" />
           </div>
 
-          <!-- Category -->
+          <!-- Categories -->
           <div class="grid gap-2">
-            <Label for="category_id" class="sr-only">Category</Label>
-            <Select
-              id="category_id"
-              placeholder="Select category"
-              v-model="form.category_id"
+            <Label for="category_ids" class="sr-only">Categories</Label>
+            <MultiSelect
+              id="category_ids"
+              placeholder="Select categories"
+              v-model="form.category_ids"
               :options="categories"
             />
-            <InputError :message="form.errors.category_id" />
+            <InputError :message="form.errors.category_ids" />
           </div>
 
-          <!-- Price -->
-          <div class="grid gap-2">
-            <Label for="price" class="sr-only">Price</Label>
-            <Input id="price" type="number" v-model="form.price" placeholder="Product Price" />
-            <InputError :message="form.errors.price" />
+          <!-- Price & Quantity in one row -->
+          <div class="grid grid-cols-2 gap-4">
+            <div class="grid gap-2">
+              <Label for="price" class="sr-only">Price</Label>
+              <Input id="price" type="number" v-model="form.price" placeholder="Product Price" />
+              <InputError :message="form.errors.price" />
+            </div>
+            <div class="grid gap-2">
+              <Label for="quantity" class="sr-only">Quantity</Label>
+              <Input id="quantity" type="number" v-model="form.quantity" placeholder="Product Quantity" />
+              <InputError :message="form.errors.quantity" />
+            </div>
           </div>
 
           <!-- Brand -->
@@ -120,13 +128,6 @@ const addProduct = (e: Event) => {
             <Label for="brand" class="sr-only">Brand</Label>
             <Input id="brand" type="text" v-model="form.brand" placeholder="Product Brand" />
             <InputError :message="form.errors.brand" />
-          </div>
-
-          <!-- Quantity -->
-          <div class="grid gap-2">
-            <Label for="quantity" class="sr-only">Quantity</Label>
-            <Input id="quantity" type="number" v-model="form.quantity" placeholder="Product Quantity" />
-            <InputError :message="form.errors.quantity" />
           </div>
 
           <!-- Store -->
@@ -141,6 +142,7 @@ const addProduct = (e: Event) => {
             <InputError :message="form.errors.store_id" />
           </div>
 
+          <!-- Description -->
           <div class="grid gap-2">
             <Label for="description" class="sr-only">Description</Label>
             <Textarea
@@ -150,7 +152,6 @@ const addProduct = (e: Event) => {
             />
             <InputError :message="form.errors.description" />
           </div>
-
 
           <DialogFooter class="gap-2">
             <Button type="button" variant="secondary" @click="productStore.closeModal()">Cancel</Button>

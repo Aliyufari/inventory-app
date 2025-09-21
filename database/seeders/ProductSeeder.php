@@ -6,7 +6,6 @@ use App\Models\Store;
 use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Database\Seeder;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
 class ProductSeeder extends Seeder
 {
@@ -15,27 +14,35 @@ class ProductSeeder extends Seeder
      */
     public function run(): void
     {
-        $store = Store::where('name', 'Main Store')->first();
-        $antiBioCategory = Category::where('name', 'Antibiotics')->first();
+        // Ensure the store exists
+        $store = Store::firstOrCreate(['name' => 'Main Store']);
 
-        Product::firstOrCreate([
+        // Ensure categories exist
+        $antiBioCategory = Category::firstOrCreate(['name' => 'Antibiotics']);
+        $painReliefCategory = Category::firstOrCreate(['name' => 'Pain Relief']);
+
+        // Create Paracetamol
+        $paracetamol = Product::firstOrCreate([
             'name' => 'Paracetamol',
             'brand' => 'M & B',
             'price' => 200,
             'quantity' => 100,
             'store_id' => $store->id,
-            'category_id' => $antiBioCategory->id,
             'description' => '',
         ]);
 
-        Product::firstOrCreate([
+        $paracetamol->categories()->sync([$antiBioCategory->id, $painReliefCategory->id]);
+
+        // Create Arthimeter
+        $arthimeter = Product::firstOrCreate([
             'name' => 'Arthimeter',
             'brand' => 'India',
             'price' => 300,
             'quantity' => 100,
             'store_id' => $store->id,
-            'category_id' => $antiBioCategory->id,
             'description' => '',
         ]);
+
+        $arthimeter->categories()->sync([$antiBioCategory->id]);
     }
 }

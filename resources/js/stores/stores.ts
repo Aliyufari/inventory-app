@@ -38,7 +38,7 @@ export const useStore = defineStore('stores', {
 
       try {
         await axios.delete(route('stores.destroy', id))
-        this.stores = this.stores.filter((s) => s.id !== id) // remove locally
+        this.stores = this.stores.filter((s) => s.id !== id) 
         this.closeModal()
       } catch (error: any) {
         console.error('Error deleting store:', error)

@@ -14,21 +14,33 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        if (request()->wantsJson()) {
-            return response()->json([
-                'categories' => Category::all()
+        $categories = Category::latest()
+            ->paginate(10)->through(fn($category) => [
+                'id' => $category->id,
+                'name' => $category->name,
+                'description' => $category->description,
+                'created_at' => $category->created_at,
+                'updated_at' => $category->updated_at,
             ]);
-        }
-
-        $categories = Category::paginate(10)->through(fn($category) => [
-            'id' => $category->id,
-            'name' => $category->name,
-            'description' => $category->description,
-            'created_at' => $category->created_at,
-            'updated_at' => $category->updated_at,
-        ]);
 
         return Inertia::render('categories/Index', [
+            'categories' => $categories,
+        ]);
+    }
+
+    public function list()
+    {
+        $categories = Category::latest()
+            ->get()
+            ->map(fn($category) => [
+                'id' => $category->id,
+                'name' => $category->name,
+                'description' => $category->description,
+                'created_at' => $category->created_at,
+                'updated_at' => $category->updated_at,
+            ]);
+
+        return response()->json([
             'categories' => $categories,
         ]);
     }

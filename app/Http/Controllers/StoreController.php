@@ -14,21 +14,33 @@ class StoreController extends Controller
      */
     public function index()
     {
-        if (request()->wantsJson()) {
-            return response()->json([
-                'stores' => Store::all()
+        $stores = Store::latest()
+            ->paginate(10)->through(fn($store) => [
+                'id' => $store->id,
+                'name' => $store->name,
+                'description' => $store->description,
+                'created_at' => $store->created_at,
+                'updated_at' => $store->updated_at,
             ]);
-        }
-
-        $stores = Store::paginate(10)->through(fn($store) => [
-            'id' => $store->id,
-            'name' => $store->name,
-            'description' => $store->description,
-            'created_at' => $store->created_at,
-            'updated_at' => $store->updated_at,
-        ]);
 
         return Inertia::render('stores/Index', [
+            'stores' => $stores,
+        ]);
+    }
+
+    public function list()
+    {
+        $stores = Store::latest()
+            ->get()
+            ->map(fn($store) => [
+                'id' => $store->id,
+                'name' => $store->name,
+                'description' => $store->description,
+                'created_at' => $store->created_at,
+                'updated_at' => $store->updated_at,
+            ]);
+
+        return response()->json([
             'stores' => $stores,
         ]);
     }
