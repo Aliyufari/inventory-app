@@ -17,20 +17,21 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::paginate(10)->through(fn($user) => [
-            'id' => $user->id,
-            'avatar' => $user->avatar,
-            'name' => $user->name,
-            'email' => $user->email,
-            'gender' => $user->gender,
-            'status' => $user->status,
-            'role' => [
-                'id' => $user->role->id,
-                'name' => $user->role->name,
-            ],
-            'created_at' => $user->created_at,
-            'updated_at' => $user->updated_at,
-        ]);
+        $users = User::latest()
+            ->paginate(10)->through(fn($user) => [
+                'id' => $user->id,
+                'avatar' => $user->avatar,
+                'name' => $user->name,
+                'email' => $user->email,
+                'gender' => $user->gender,
+                'status' => $user->status,
+                'role' => [
+                    'id' => $user->role->id,
+                    'name' => $user->role->name,
+                ],
+                'created_at' => $user->created_at,
+                'updated_at' => $user->updated_at,
+            ]);
 
         if (request()->wantsJson()) {
             return response()->json(['users' => $users]);
