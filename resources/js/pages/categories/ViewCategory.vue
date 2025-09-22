@@ -1,80 +1,65 @@
 <script setup lang="ts">
-import { useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed } from "vue"
+import { useCategory } from "@/stores/categories"
 
 // Components
-import InputError from '@/components/InputError.vue';
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button"
 import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Eye, PenBoxIcon, UserPlus } from 'lucide-vue-next';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import Textarea from "@/components/ui/textarea/Textarea.vue"
 
-const form = useForm({
-    name: '',
-    description: ''
-});
+const categoryStore = useCategory()
 
-const addUser = (e: Event) => {
-  e.preventDefault();
+// ✅ Accept optional category as prop
+const props = defineProps<{
+  category?: { id: number; name: string; description?: string } | null
+}>()
 
-  form.post(route('users.store'), {
-    preserveScroll: true,
-    onSuccess: () => closeModal(),
-    onFinish: () => form.reset(),
-  });
-};
+// ✅ Use computed: either prop or from store
+const selectedCategory = computed(() => props.category ?? categoryStore.selectedCategory)
 
 const closeModal = () => {
-    form.clearErrors();
-    form.reset();
-};
+  categoryStore.closeModal()
+  categoryStore.selectedCategory = null
+}
 </script>
 
 <template>
-    <div class="space-y-6">
-        <Dialog>
-            <DialogTrigger as-child>
-                <Button class="bg-amber-100 hover:bg-amber-200"><Eye class="text-black" /></Button>
-            </DialogTrigger>
-            <DialogContent>
-                <form class="space-y-6">
-                    <DialogHeader class="space-y-3">
-                        <DialogTitle>Viewing store</DialogTitle>
-                    </DialogHeader>
+  <Dialog
+    :open="categoryStore.modalType === 'view'"
+    @update:open="val => { if (!val) closeModal() }"
+  >
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Viewing Category</DialogTitle>
+        <DialogDescription>
+          Details of {{ selectedCategory?.name ?? "the selected category" }}.
+        </DialogDescription>
+      </DialogHeader>
 
-                    <div class="grid gap-2">
-                        <Label for="name" class="sr-only">Name</Label>
-                        <Input id="name" type="text" v-model="form.name" placeholder="Name" />
-                        <InputError :message="form.errors.name" />
-                    </div>
+      <div v-if="selectedCategory" class="space-y-4">
+        <div>
+          <Label>Name</Label>
+          <Input :model-value="selectedCategory.name" disabled />
+        </div>
 
-                    <div class="grid gap-2">
-                        <Label for="role" class="sr-only">Description</Label>
-                        <Textarea v-model="form.description" value="" />
-                        <InputError :message="form.errors.description" />
-                    </div>
+        <div>
+          <Label>Description</Label>
+          <Textarea :model-value="selectedCategory.description" disabled />
+        </div>
+      </div>
 
-                    <DialogFooter class="gap-2">
-                        <DialogClose as-child>
-                        <Button variant="secondary" @click="closeModal">Cancel</Button>
-                        </DialogClose>
-
-                        <Button type="submit" variant="destructive" :disabled="form.processing">
-                        Update
-                        </Button>
-                    </DialogFooter>
-                    </form>
-            </DialogContent>
-        </Dialog>
-    </div>
+      <DialogFooter>
+        <Button variant="secondary" @click="closeModal">Close</Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>

@@ -59,19 +59,7 @@ onMounted(() => {
 
       <div class="space-y-5 sm:space-y-6">
         <ComponentCard>
-          <UsersTable :data="users">
-            <template #view="{ user }">
-              <ViewUser :user="user" />
-            </template>
-
-            <template #edit="{ user }">
-              <EditUser :user="user" />
-            </template>
-
-            <template #default="{ user }">
-              <DeleteUser :user="user" />
-            </template>
-          </UsersTable>
+          <UsersTable :data="users" />
         </ComponentCard>
       </div>
 

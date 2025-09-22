@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { onMounted } from "vue";
 import { Head, useForm, usePage } from "@inertiajs/vue3";
 import AppLayout from "@/layouts/AppLayout.vue";
 import ProductLayout from "@/layouts/products/Layout.vue";
@@ -33,10 +33,9 @@ const form = useForm({
 });
 
 const productStore = useProduct();
-const stores = computed(() => productStore.products);
 
 const submit = () => {
-  form.patch(route("prooduct.update"), { preserveScroll: true });
+  form.patch(route("product.update"), { preserveScroll: true });
 };
 
 onMounted(() => {
@@ -52,40 +51,30 @@ onMounted(() => {
 
     <ProductLayout>
       <template #button>
-        <Button @click="productStore.openModal('add')"><BriefcaseMedical class="-mr-2" />+ Add Product</Button>
+        <Button @click="productStore.openModal('add')">
+          <BriefcaseMedical class="-mr-2" />+ Add Product
+        </Button>
       </template>
-
 
       <div class="space-y-5 sm:space-y-6">
         <ComponentCard>
-          <ProductsTable :data="products">
-            <template #view="{ product }">
-              <ViewProduct :product="product" />
-            </template>
-
-            <template #edit="{ product }">
-              <EditProduct :product="product" />
-            </template>
-
-            <template #default="{ product }">
-              <DeleteProduct :product="product" />
-            </template>
-          </ProductsTable>
+          <ProductsTable :data="products" />
         </ComponentCard>
       </div>
 
+      <!-- Modals -->
       <AddProduct v-if="productStore.modalType === 'add'" />
       <EditProduct
         v-if="productStore.modalType === 'edit'"
-        :store="productStore.selectedProduct"
+        :product="productStore.selectedProduct"
       />
       <ViewProduct
         v-if="productStore.modalType === 'view'"
-        :store="productStore.selectedProduct"
+        :product="productStore.selectedProduct"
       />
       <DeleteProduct
         v-if="productStore.modalType === 'delete'"
-        :store="productStore.selectedProduct"
+        :product="productStore.selectedProduct"
       />
     </ProductLayout>
   </AppLayout>

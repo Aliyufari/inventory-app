@@ -15,6 +15,7 @@ const usersStore = useUser()
             <th class="px-5 py-3 text-left whitespace-nowrap">#</th>
             <th class="px-5 py-3 text-left whitespace-nowrap">Profile</th>
             <th class="px-5 py-3 text-left whitespace-nowrap">Email</th>
+            <th class="px-5 py-3 text-left whitespace-nowrap">Role</th>
             <th class="px-5 py-3 text-left whitespace-nowrap">Gender</th>
             <th class="px-5 py-3 text-left whitespace-nowrap">Status</th>
             <th class="px-5 py-3 text-left whitespace-nowrap"></th>
@@ -52,7 +53,7 @@ const usersStore = useUser()
 
             <!-- Email -->
             <td class="px-5 py-4 whitespace-nowrap">{{ user.email }}</td>
-
+            
             <!-- Gender -->
             <td class="px-5 py-4 whitespace-nowrap">
               {{ user.gender

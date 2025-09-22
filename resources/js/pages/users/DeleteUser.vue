@@ -15,7 +15,7 @@ import {
 
 import { useUser } from "@/stores/users";
 
-const userStore = useUser(); // renamed for clarity
+const userStore = useUser();
 const loading = ref(false);
 const error = ref<string | null>(null);
 
@@ -26,20 +26,23 @@ const deleteUser = async (e: Event) => {
 
   try {
     await axios.delete(route("users.delete", userStore.selectedUser?.id));
+
+    // ✅ remove from store immediately
+    if (userStore.selectedUser?.id) {
+      userStore.removeUser(userStore.selectedUser.id);
+    }
+
+    // ✅ close modal
     userStore.closeModal();
-    // optionally refresh list:
-    userStore.fetchUsers?.();
+
+    // ✅ refresh from server (optional, in case pagination changed)
+    await userStore.fetchUsers();
   } catch (err: any) {
     console.error("Error deleting user:", err);
     error.value = "Failed to delete user.";
   } finally {
     loading.value = false;
   }
-};
-
-const closeModal = () => {
-  error.value = null;
-  userStore.closeModal();
 };
 </script>
 
@@ -51,12 +54,14 @@ const closeModal = () => {
     <DialogContent>
       <form @submit="deleteUser" class="space-y-6">
         <DialogHeader>
-          <DialogTitle>Are you sure you want to delete this store?</DialogTitle>
-          <DialogDescription>This action cannot be reverted.</DialogDescription>
+          <DialogTitle>Are you sure you want to delete this user?</DialogTitle>
+          <DialogDescription>
+            This action cannot be reverted.
+          </DialogDescription>
         </DialogHeader>
 
         <DialogFooter class="gap-2">
-          <Button type="button" variant="secondary" @click="closeModal">
+          <Button type="button" variant="secondary" @click="userStore.closeModal()">
             Cancel
           </Button>
           <Button type="submit" variant="destructive" :disabled="loading">

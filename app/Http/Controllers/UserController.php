@@ -43,14 +43,6 @@ class UserController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
      * Store a newly created resource in storage.
      */
     public function store(StoreUserRequest $request)
@@ -63,8 +55,6 @@ class UserController extends Controller
             $user = User::create($data);
 
             event(new Registered($user));
-
-            // return to_route('users.index');
 
             return redirect()->back()->with([
                 'status' => true,
@@ -98,14 +88,6 @@ class UserController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
      * Update the specified resource in storage.
      */
     public function update(UpdateUserRequest $request, User $user)
@@ -113,12 +95,8 @@ class UserController extends Controller
         try {
             $data = $request->validated();
 
-            $data['password'] = Hash::make($request->password);
-
             $user->update($data);
             $user->refresh();
-
-            // return to_route('users.index');
 
             return redirect()->back()->with([
                 'status' => true,

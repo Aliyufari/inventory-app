@@ -1,84 +1,108 @@
 <script setup lang="ts">
-import { useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { useForm } from "@inertiajs/vue3"
+import { watch } from "vue"
+import { useCategory } from "@/stores/categories"
 
 // Components
-import InputError from '@/components/InputError.vue';
-import { Button } from '@/components/ui/button';
+import InputError from "@/components/InputError.vue"
+import { Button } from "@/components/ui/button"
 import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
-import { PenBoxIcon, UserPlus } from 'lucide-vue-next';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import Textarea from "@/components/ui/textarea/Textarea.vue"
 
-const passwordInput = ref<HTMLInputElement | null>(null);
+const categoryStore = useCategory()
 
 const form = useForm({
-    name: '',
-    description: ''
-});
+  name: "",
+  description: "",
+})
 
-const addUser = (e: Event) => {
-  e.preventDefault();
+// ✅ Populate form when selectedCategory changes
+watch(
+  () => categoryStore.selectedCategory,
+  (category) => {
+    if (category) {
+      form.name = category.name
+      form.description = category.description ?? ""
+    }
+  },
+  { immediate: true }
+)
 
-  form.post(route('users.store'), {
-    preserveScroll: true,
-    onSuccess: () => closeModal(),
-    onError: () => passwordInput.value?.focus(),
+const updateCategory = (e: Event) => {
+  e.preventDefault()
+
+  form.put(route("categories.update", categoryStore.selectedCategory?.id), {
+    onSuccess: (page) => {
+      // ✅ If backend sends updated category in props, update directly
+      if (page.props?.category) {
+        categoryStore.updateCategory(page.props.category)
+      } else {
+        // fallback: refetch list
+        categoryStore.fetchCategories()
+      }
+
+      categoryStore.closeModal()
+    },
     onFinish: () => form.reset(),
-  });
-};
-
-const closeModal = () => {
-    form.clearErrors();
-    form.reset();
-};
+  })
+}
 </script>
 
 <template>
-    <div class="space-y-6">
-        <Dialog>
-            <DialogTrigger as-child>
-                <Button><PenBoxIcon class="text-white" /></Button>
-            </DialogTrigger>
-            <DialogContent>
-                <form class="space-y-6" @submit="addUser">
-                    <DialogHeader class="space-y-3">
-                        <DialogTitle>Edit Category</DialogTitle>
-                    </DialogHeader>
+  <Dialog
+    :open="categoryStore.modalType === 'edit'"
+    @update:open="val => { if (!val) categoryStore.closeModal() }"
+  >
+    <DialogContent>
+      <form @submit="updateCategory" class="space-y-6">
+        <DialogHeader>
+          <DialogTitle>Edit Category</DialogTitle>
+        </DialogHeader>
 
-                    <div class="grid gap-2">
-                        <Label for="name" class="sr-only">Name</Label>
-                        <Input id="name" type="text" v-model="form.name" placeholder="Name" />
-                        <InputError :message="form.errors.name" />
-                    </div>
+        <!-- Name -->
+        <div class="grid gap-2">
+          <Label for="name">Name</Label>
+          <Input
+            id="name"
+            v-model="form.name"
+            type="text"
+            placeholder="Name"
+          />
+          <InputError :message="form.errors.name" />
+        </div>
 
-                    <div class="grid gap-2">
-                        <Label for="role" class="sr-only">Description</Label>
-                        <Textarea v-model="form.description" value="" />
-                        <InputError :message="form.errors.description" />
-                    </div>
+        <!-- Description -->
+        <div class="grid gap-2">
+          <Label for="description">Description</Label>
+          <Textarea
+            id="description"
+            v-model="form.description"
+            placeholder="Description"
+          />
+          <InputError :message="form.errors.description" />
+        </div>
 
-                    <DialogFooter class="gap-2">
-                        <DialogClose as-child>
-                        <Button variant="secondary" @click="closeModal">Cancel</Button>
-                        </DialogClose>
-
-                        <Button type="submit" variant="destructive" :disabled="form.processing">
-                        Update
-                        </Button>
-                    </DialogFooter>
-                    </form>
-            </DialogContent>
-        </Dialog>
-    </div>
+        <!-- Actions -->
+        <div class="flex gap-2 justify-end">
+          <Button
+            type="button"
+            variant="secondary"
+            @click="categoryStore.closeModal()"
+          >
+            Cancel
+          </Button>
+          <Button type="submit" :disabled="form.processing">
+            Update
+          </Button>
+        </div>
+      </form>
+    </DialogContent>
+  </Dialog>
 </template>

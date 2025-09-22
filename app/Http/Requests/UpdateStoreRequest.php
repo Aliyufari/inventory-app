@@ -26,15 +26,12 @@ class UpdateStoreRequest extends FormRequest
             'name' => [
                 'required',
                 'string',
-                'unique',
                 'max:255',
-                Rule::unique('stores', 'name')->ignore($this->route())
+                Rule::unique('stores', 'name')->ignore($this->route('store'))
             ],
             'description' => [
                 'nullable',
                 'string',
-                'unique',
-                'max:255'
             ]
         ];
     }

@@ -5,20 +5,21 @@ const productStore = useProduct()
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
-    <div class="max-w-full overflow-x-auto custom-scrollbar">
-      <table class="min-w-full text-sm">
+  <div class="rounded-xl border border-gray-200 bg-white">
+    <!-- ✅ Scroll wrapper -->
+    <div class="w-full overflow-x-auto custom-scrollbar">
+      <table class="min-w-max w-full text-sm">
         <!-- Table Header -->
         <thead>
           <tr class="border-b border-gray-200 bg-gray-50">
             <th class="px-5 py-3 text-left whitespace-nowrap">#</th>
             <th class="px-5 py-3 text-left whitespace-nowrap">Name</th>
             <th class="px-5 py-3 text-left whitespace-nowrap">Brand</th>
-            <th class="px-5 py-3 text-left whitespace-nowrap">Category(es)</th>
+            <th class="px-5 py-3 text-left whitespace-nowrap">Categories</th>
             <th class="px-5 py-3 text-left whitespace-nowrap">Store</th>
             <th class="px-5 py-3 text-left whitespace-nowrap">Quantity</th>
-            <th class="px-5 py-3 text-left whitespace-nowrap">Description</th>
-            <th class="px-5 py-3 text-left whitespace-nowrap">Actions</th>
+            <th class="px-5 py-3 text-left">Description</th> <!-- ✅ no nowrap -->
+            <th class="px-5 py-3 text-left whitespace-nowrap"></th>
           </tr>
         </thead>
 
@@ -26,7 +27,7 @@ const productStore = useProduct()
         <tbody class="divide-y divide-gray-200">
           <tr v-for="(product, index) in productStore.products" :key="product.id">
             <!-- Index -->
-            <td class="px-5 py-4">{{ index + 1 }}</td>
+            <td class="px-5 py-4 whitespace-nowrap">{{ index + 1 }}</td>
 
             <!-- Name -->
             <td class="px-5 py-4 whitespace-nowrap">{{ product.name }}</td>
@@ -43,16 +44,22 @@ const productStore = useProduct()
             </td>
 
             <!-- Store -->
-            <td class="px-5 py-4 whitespace-nowrap">{{ product.store?.name || '—' }}</td>
+            <td class="px-5 py-4 whitespace-nowrap">
+              {{ product.store?.name || '—' }}
+            </td>
 
             <!-- Quantity -->
-            <td class="px-5 py-4 whitespace-nowrap">{{ product.quantity }}</td>
+            <td class="px-5 py-4 whitespace-nowrap">
+              {{ product.quantity }}
+            </td>
 
-            <!-- Description -->
-            <td class="px-5 py-4 whitespace-nowrap">{{ product.description || '—' }}</td>
+            <!-- ✅ Description (wrapped text) -->
+            <td class="px-5 py-4 text-gray-700">
+              {{ product.description || '—' }}
+            </td>
 
             <!-- Actions -->
-            <td class="px-5 py-4">
+            <td class="px-5 py-4 whitespace-nowrap">
               <div class="flex gap-2">
                 <button
                   @click="productStore.openModal('view', product)"

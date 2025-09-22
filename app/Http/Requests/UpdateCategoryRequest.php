@@ -26,15 +26,12 @@ class UpdateCategoryRequest extends FormRequest
             'name' => [
                 'required',
                 'string',
-                'unique',
                 'max:255',
-                Rule::unique('categories', 'name')->ignore($this->route())
+                Rule::unique('categories', 'name')->ignore($this->route('category'))
             ],
             'description' => [
                 'nullable',
                 'string',
-                'unique',
-                'max:255'
             ]
         ];
     }

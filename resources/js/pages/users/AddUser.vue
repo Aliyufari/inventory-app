@@ -21,8 +21,8 @@ import { Select } from '@/components/ui/select'
 import { Role } from '@/types'
 
 const usersStore = useUser()
-const passwordInput = ref<HTMLInputElement | null>(null)
-const roles = ref<{ label: string; value: string }[]>([])
+const passwordInput = ref<HTMLInputElement | null>(null);
+const roles = ref<{ label: string; value: string }[]>([]);
 
 const form = useForm({
   email: '',

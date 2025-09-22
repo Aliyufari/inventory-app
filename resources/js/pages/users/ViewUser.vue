@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useUser } from "@/stores/users";
-
-// Components
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,45 +12,66 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { User } from "@/types";
 
 const usersStore = useUser();
-const user = computed(() => usersStore.selectedUser);
+
+const props = defineProps<{
+  user?: User | null;
+}>();
+
+// ✅ Use computed: either prop (from parent) or fallback to store
+const selectedUser = computed(() => props.user ?? usersStore.selectedUser);
 
 const closeModal = () => {
   usersStore.closeModal();
+  usersStore.selectedUser = null;
+};
+
+// ✅ helper to capitalize safely
+const capitalize = (val?: string | null) => {
+  if (!val) return "";
+  return val.charAt(0).toUpperCase() + val.slice(1);
 };
 </script>
 
 <template>
   <Dialog
     :open="usersStore.modalType === 'view'"
-    @update:open="val => { if (!val) usersStore.closeModal() }"
+    @update:open="val => { if (!val) closeModal() }"
   >
     <DialogContent>
       <DialogHeader>
         <DialogTitle>Viewing User</DialogTitle>
-        <DialogDescription>Details of the selected user.</DialogDescription>
+        <DialogDescription>
+          Details of {{ selectedUser?.name ?? "the selected user" }}.
+        </DialogDescription>
       </DialogHeader>
 
-      <div class="space-y-4">
+      <div v-if="selectedUser" class="space-y-4">
+        <div>
+          <Label>Name</Label>
+          <Input :model-value="selectedUser.name" disabled />
+        </div>
+
         <div>
           <Label>Email</Label>
-          <Input :value="user?.email" disabled />
+          <Input :model-value="selectedUser.email" disabled />
         </div>
 
         <div>
           <Label>Role</Label>
-          <Input :value="user?.role?.name" disabled />
+          <Input :model-value="capitalize(selectedUser.role?.name)" disabled />
         </div>
 
         <div>
           <Label>Gender</Label>
-          <Input :value="user?.gender" disabled />
+          <Input :model-value="capitalize(selectedUser.gender)" disabled />
         </div>
 
         <div>
           <Label>Status</Label>
-          <Input :value="user?.status" disabled />
+          <Input :model-value="capitalize(selectedUser.status)" disabled />
         </div>
       </div>
 
