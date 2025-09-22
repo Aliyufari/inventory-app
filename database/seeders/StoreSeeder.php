@@ -13,7 +13,8 @@ class StoreSeeder extends Seeder
      */
     public function run(): void
     {
-        Store::firstOrCreate(['name' => 'Main Store']);
-        Store::firstOrCreate(['name' => 'Lap Store']);
+        Store::firstOrCreate(['name' => 'Main']);
+        Store::firstOrCreate(['name' => 'Lap']);
+        Store::firstOrCreate(['name' => 'Dental']);
     }
 }

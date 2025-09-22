@@ -25,14 +25,14 @@ const mainNavItems: NavItem[] = [
         icon: Store,
     },
     {
-        title: 'Products',
-        href: '/products',
-        icon: BriefcaseMedical,
-    },
-    {
         title: 'Categories',
         href: '/categories',
         icon: Section,
+    },
+    {
+        title: 'Products',
+        href: '/products',
+        icon: BriefcaseMedical,
     },
     {
         title: 'Inventory',
