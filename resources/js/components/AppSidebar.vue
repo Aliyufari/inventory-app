@@ -36,7 +36,7 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Inventory',
-        href: '/inventory',
+        href: '/inventories',
         icon: DollarSign,
     },
     {

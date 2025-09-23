@@ -49,6 +49,36 @@ class ProductController extends Controller
         ]);
     }
 
+    public function list()
+    {
+        $products = Product::latest()
+            ->get()
+            ->map(fn($product) => [
+                'id' => $product->id,
+                'name' => $product->name,
+                'price' => $product->price,
+                'quantity' => $product->quantity,
+                'brand' => $product->brand,
+                'description' => $product->description,
+                'store' => $product->store
+                    ? [
+                        'id' => $product->store->id,
+                        'name' => $product->store->name,
+                    ]
+                    : null,
+                'categories' => $product->categories->map(fn($c) => [
+                    'id' => $c->id,
+                    'name' => $c->name,
+                ]),
+                'created_at' => $product->created_at,
+                'updated_at' => $product->updated_at,
+            ]);
+
+        return response()->json([
+            'products' => $products,
+        ]);
+    }
+
     /**
      * Store a newly created resource in storage.
      */
