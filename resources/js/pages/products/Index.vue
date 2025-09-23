@@ -28,7 +28,7 @@ const authUser = page.props.auth.user as User
 const form = useForm({ name: authUser.name, email: authUser.email })
 
 const productStore = useProduct()
-const products = computed(() => productStore.products)
+// const products = computed(() => productStore.products)
 
 onMounted(() => {
   if (!productStore.products.length) {
