@@ -8,6 +8,7 @@ export const useProduct = defineStore('products', {
     pagination: null as Record<string, any> | null,
     modalType: null as string | null,
     selectedProduct: null as Product | null,
+    search: '' as string,
     loading: false,
     error: null as string | null,
   }),
@@ -18,7 +19,10 @@ export const useProduct = defineStore('products', {
       this.error = null
 
       try {
-        const { data } = await axios.get(route('products.index', { page }))
+        const { data } = await axios.get(route('products.index'), {
+          params: { page, search: this.search }, 
+        })
+
         this.products = data.products.data || []
         this.pagination = {
           links: data.products.links,
@@ -32,14 +36,24 @@ export const useProduct = defineStore('products', {
       }
     },
 
-    async deleteProduct(id: number) {
+    async deleteProduct(id: string) {
       this.loading = true
       this.error = null
 
       try {
-        await axios.delete(route('products.destroy', id))
-        this.products = this.products.filter((p) => p.id !== id) // remove locally
-        this.closeModal()
+        const { data } = await axios.delete(route('products.delete', id))
+
+        if (data.status) {
+          this.products = this.products.filter((s) => s.id !== id)
+
+          this.closeModal()
+          await this.fetchProducts()
+
+          // (Optional) Show toast/snackbar
+          // toast.success(data.message)
+        } else {
+          this.error = data.message || 'Failed to delete product'
+        }
       } catch (error: any) {
         console.error('Error deleting product:', error)
         this.error = error.message || 'Failed to delete product'

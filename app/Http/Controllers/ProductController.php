@@ -15,10 +15,17 @@ class ProductController extends Controller
      */
     public function index()
     {
-        // Eager-load store and categories to avoid N+1
-        $products = Product::with(['store', 'categories'])
-            ->latest()
+        $query = Product::with(['store', 'categories']);
+
+        if ($search = request('search')) {
+            $query->where('name', 'like', "%{$search}%")
+                ->orWhere('brand', 'like', "%{$search}%")
+                ->orWhereHas('store', fn($q) => $q->where('name', 'like', "%{$search}%"));
+        }
+
+        $products = $query->latest()
             ->paginate(15)
+            ->withQueryString()
             ->through(fn($product) => [
                 'id' => $product->id,
                 'name' => $product->name,
@@ -155,15 +162,15 @@ class ProductController extends Controller
         try {
             $product->delete();
 
-            return redirect()->back()->with([
+            return response()->json([
                 'status' => true,
-                'message' => 'Product deleted successfully'
-            ]);
+                'message' => 'Product deleted successfully',
+            ], 200);
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors([
+            return response()->json([
                 'status' => false,
-                'errors' => $e->getMessage()
-            ]);
+                'message' => $e->getMessage(),
+            ], 500);
         }
     }
 }

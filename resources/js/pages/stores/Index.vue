@@ -1,41 +1,47 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
-import { Head, usePage } from "@inertiajs/vue3";
-import AppLayout from "@/layouts/AppLayout.vue";
-import StoreLayout from "@/layouts/stores/Layout.vue";
-import { Store, type BreadcrumbItem, type SharedData, type User } from "@/types";
-import ComponentCard from "@/components/ui/card/ComponentCard.vue";
-import StoresTable from "@/components/ui/table/StoresTable.vue";
-import AddStore from "@/pages/stores/AddStore.vue";
-import EditStore from "@/pages/stores/EditStore.vue";
-import ViewStore from "@/pages/stores/ViewStore.vue";
-import DeleteStore from "@/pages/stores/DeleteStore.vue";
-import { Button } from "@/components/ui/button";
-import { useStore } from "@/stores/stores";
-import { Store as StoreIcon } from "lucide-vue-next";
+import { onMounted } from "vue"
+import { Head, usePage } from "@inertiajs/vue3"
+import AppLayout from "@/layouts/AppLayout.vue"
+import StoreLayout from "@/layouts/stores/Layout.vue"
+import { type Store, type BreadcrumbItem, type SharedData, type User } from "@/types"
+import ComponentCard from "@/components/ui/card/ComponentCard.vue"
+import StoresTable from "@/components/ui/table/StoresTable.vue"
+import AddStore from "@/pages/stores/AddStore.vue"
+import EditStore from "@/pages/stores/EditStore.vue"
+import ViewStore from "@/pages/stores/ViewStore.vue"
+import DeleteStore from "@/pages/stores/DeleteStore.vue"
+import { Button } from "@/components/ui/button"
+import { useStore } from "@/stores/stores"
+import { Store as StoreIcon } from "lucide-vue-next"
+import Pagination from "@/pages/components/Pagination.vue"
+import SearchInput from "@/pages/components/SeachInput.vue"
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: "Manage stores", href: "/stores" }];
+const breadcrumbs: BreadcrumbItem[] = [{ title: "Manage stores", href: "/stores" }]
 
-const page = usePage<SharedData>();
-const user = page.props.auth.user as User;
+const page = usePage<SharedData>()
+const user = page.props.auth.user as User
 
 interface Props {
-  mustVerifyEmail: boolean;
-  status?: string;
-  stores?: Store | unknown[];
+  mustVerifyEmail: boolean
+  status?: string
+  stores?: Store | unknown[]
 }
 
-defineProps<Props>();
+defineProps<Props>()
 
 // Pinia store
-const storeStore = useStore();
+const storeStore = useStore()
 
 // Fetch stores on mount if not already loaded
 onMounted(() => {
   if (!storeStore.stores?.length) {
-    storeStore.fetchStores();
+    storeStore.fetchStores()
   }
-});
+})
+
+const handleSearch = () => {
+  storeStore.fetchStores(1) 
+}
 </script>
 
 <template>
@@ -51,15 +57,52 @@ onMounted(() => {
 
       <div class="space-y-5 sm:space-y-6">
         <ComponentCard>
-          <StoresTable :data="stores" />
+          <!-- 🔍 Search input -->
+          <div class="mb-4">
+            <SearchInput
+              v-model="storeStore.search"
+              placeholder="Search store..."
+              @search="handleSearch"
+            />
+          </div>
+
+          <!-- 📊 Stores Table -->
+          <StoresTable
+            :data="storeStore.stores"
+            @edit="storeStore.openModal('edit', $event)"
+            @view="storeStore.openModal('view', $event)"
+            @delete="storeStore.openModal('delete', $event)"
+          />
+
+          <!-- 📄 Pagination -->
+          <Pagination
+            v-if="storeStore.pagination"
+            :links="storeStore.pagination.links"
+            :meta="storeStore.pagination.meta"
+            :onPageChange="page => storeStore.fetchStores(page)"
+          />
         </ComponentCard>
       </div>
 
       <!-- Modals -->
-      <AddStore v-if="storeStore.modalType === 'add'" />
-      <EditStore v-if="storeStore.modalType === 'edit'" :store="storeStore.selectedStore" />
-      <ViewStore v-if="storeStore.modalType === 'view'" :store="storeStore.selectedStore" />
-      <DeleteStore v-if="storeStore.modalType === 'delete'" :store="storeStore.selectedStore" />
+      <AddStore
+        v-if="storeStore.modalType === 'add'"
+        @saved="storeStore.fetchStores()"
+      />
+      <EditStore
+        v-if="storeStore.modalType === 'edit'"
+        :store="storeStore.selectedStore"
+        @updated="storeStore.fetchStores()"
+      />
+      <ViewStore
+        v-if="storeStore.modalType === 'view'"
+        :store="storeStore.selectedStore"
+      />
+      <DeleteStore
+        v-if="storeStore.modalType === 'delete'"
+        :store="storeStore.selectedStore"
+        @deleted="storeStore.fetchStores()"
+      />
     </StoreLayout>
   </AppLayout>
 </template>

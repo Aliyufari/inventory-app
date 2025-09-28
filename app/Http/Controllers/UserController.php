@@ -17,8 +17,17 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::latest()
-            ->paginate(10)->through(fn($user) => [
+        $query = User::with(['role']);
+
+        if ($search = request('search')) {
+            $query->where('name', 'like', "%{$search}%")
+                ->orWhereHas('role', fn($q) => $q->where('name', 'like', "%{$search}%"));
+        }
+
+        $users = $query->latest()
+            ->paginate(15)
+            ->withQueryString()
+            ->through(fn($user) => [
                 'id' => $user->id,
                 'avatar' => $user->avatar,
                 'name' => $user->name,
@@ -118,15 +127,15 @@ class UserController extends Controller
         try {
             $user->delete();
 
-            return redirect()->back()->with([
+            return response()->json([
                 'status' => true,
-                'message' => 'User deleted successfully'
-            ]);
+                'message' => 'User deleted successfully',
+            ], 200);
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors([
+            return response()->json([
                 'status' => false,
-                'errors' => $e->getMessage()
-            ]);
+                'message' => $e->getMessage(),
+            ], 500);
         }
     }
 }

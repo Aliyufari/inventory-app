@@ -1,74 +1,68 @@
 <script setup lang="ts">
-import { useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
-
-// Components
-import HeadingSmall from '@/components/HeadingSmall.vue';
-import InputError from '@/components/InputError.vue';
-import { Button } from '@/components/ui/button';
+import { ref } from "vue";
+import { Button } from "@/components/ui/button";
 import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Trash2Icon } from 'lucide-vue-next';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
-const passwordInput = ref<HTMLInputElement | null>(null);
+import { useProduct } from "@/stores/products";
 
-const form = useForm({
-    password: '',
-});
+const productStore = useProduct();
+const loading = ref(false);
+const error = ref<string | null>(null);
 
-const deleteProduct = (e: Event) => {
-    e.preventDefault();
+const handleDelete = async (e: Event) => {
+  e.preventDefault();
+  if (!productStore.selectedProduct?.id) {
+    error.value = "No product selected.";
+    return;
+  }
 
-    form.delete(route('profile.destroy'), {
-        preserveScroll: true,
-        onSuccess: () => closeModal(),
-        onError: () => passwordInput.value?.focus(),
-        onFinish: () => form.reset(),
-    });
+  loading.value = true;
+  error.value = null;
+
+  try {
+    await productStore.deleteProduct(productStore.selectedProduct.id);
+  } catch (err: any) {
+    console.error("Error deleting product:", err);
+    error.value = "Failed to delete product.";
+  } finally {
+    loading.value = false;
+  }
 };
 
 const closeModal = () => {
-    form.clearErrors();
-    form.reset();
+  error.value = null;
+  productStore.closeModal();
 };
 </script>
 
 <template>
-    <div class="space-y-6">
-        <Dialog>
-            <DialogTrigger as-child>
-                <Button variant="destructive"><Trash2Icon class="text-white" /></Button>
-            </DialogTrigger>
-            <DialogContent>
-                <form class="space-y-6" @submit="deleteProduct">
-                    <DialogHeader class="space-y-3">
-                        <DialogTitle>Are you sure you want to delete this product?</DialogTitle>
-                        <DialogDescription>
-                            This action cannot be revert and all the records related to this product will be deleted.
-                        </DialogDescription>
-                    </DialogHeader>
+  <Dialog
+    :open="productStore.modalType === 'delete'"
+    @update:open="val => { if (!val) productStore.closeModal() }"
+  >
+    <DialogContent>
+      <form @submit="handleDelete" class="space-y-6">
+        <DialogHeader>
+          <DialogTitle>Are you sure you want to delete this product?</DialogTitle>
+          <DialogDescription>This action cannot be reverted.</DialogDescription>
+        </DialogHeader>
 
-                    <DialogFooter class="gap-2">
-                        <DialogClose as-child>
-                            <Button variant="secondary" @click="closeModal"> Cancel </Button>
-                        </DialogClose>
-
-                        <Button variant="destructive" :disabled="form.processing">
-                            <button type="submit">Delete</button>
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
-    </div>
+        <DialogFooter class="gap-2">
+          <Button type="button" variant="secondary" @click="closeModal">
+            Cancel
+          </Button>
+          <Button type="submit" variant="destructive" :disabled="loading">
+            Delete
+          </Button>
+        </DialogFooter>
+      </form>
+    </DialogContent>
+  </Dialog>
 </template>

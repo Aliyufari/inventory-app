@@ -14,8 +14,16 @@ class StoreController extends Controller
      */
     public function index()
     {
-        $stores = Store::latest()
-            ->paginate(15)->through(fn($store) => [
+        $query = Store::query();
+
+        if ($search = request('search')) {
+            $query->where('name', 'like', "%{$search}%");
+        }
+
+        $stores = $query->latest()
+            ->paginate(15)
+            ->withQueryString()
+            ->through(fn($store) => [
                 'id' => $store->id,
                 'name' => $store->name,
                 'description' => $store->description,
@@ -115,15 +123,15 @@ class StoreController extends Controller
         try {
             $store->delete();
 
-            return redirect()->back()->with([
+            return response()->json([
                 'status' => true,
-                'message' => 'Store deleted successfully'
-            ]);
+                'message' => 'Store deleted successfully',
+            ], 200);
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors([
+            return response()->json([
                 'status' => false,
-                'errors' => $e->getMessage()
-            ]);
+                'message' => $e->getMessage(),
+            ], 500);
         }
     }
 }

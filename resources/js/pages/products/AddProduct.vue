@@ -92,59 +92,59 @@ const addProduct = (e: Event) => {
 
           <!-- Name -->
           <div class="grid gap-2">
-            <Label for="name" class="sr-only">Name</Label>
-            <Input id="name" type="text" v-model="form.name" placeholder="Name" />
+            <Label for="name">Name</Label>
+            <Input id="name" type="text" v-model="form.name" placeholder="Product Name" />
             <InputError :message="form.errors.name" />
           </div>
 
-          <!-- Categories -->
+          <!-- Brand -->
           <div class="grid gap-2">
-            <Label for="category_ids" class="sr-only">Categories</Label>
-            <MultiSelect
-              id="category_ids"
-              placeholder="Select categories"
-              v-model="form.category_ids"
-              :options="categories"
-            />
-            <InputError :message="form.errors.category_ids" />
+            <Label for="brand">Brand</Label>
+            <Input id="brand" type="text" v-model="form.brand" placeholder="Product Brand" />
+            <InputError :message="form.errors.brand" />
+          </div>
+
+          <!-- Categories & Stores -->
+          <div class="grid grid-cols-2 gap-4">
+            <div class="grid gap-2">
+              <Label for="category_ids">Categories</Label>
+              <MultiSelect
+                id="category_ids"
+                placeholder="Select categories"
+                v-model="form.category_ids"
+                :options="categories"
+              />
+              <InputError :message="form.errors.category_ids" />
+            </div>
+            <div class="grid gap-2">
+              <Label for="store_id">Store</Label>
+              <Select
+                id="store_id"
+                placeholder="Select store"
+                v-model="form.store_id"
+                :options="stores"
+              />
+              <InputError :message="form.errors.store_id" />
+            </div>
           </div>
 
           <!-- Price & Quantity in one row -->
           <div class="grid grid-cols-2 gap-4">
             <div class="grid gap-2">
-              <Label for="price" class="sr-only">Price</Label>
+              <Label for="price">Price</Label>
               <Input id="price" type="number" v-model="form.price" placeholder="Product Price" />
               <InputError :message="form.errors.price" />
             </div>
             <div class="grid gap-2">
-              <Label for="quantity" class="sr-only">Quantity</Label>
+              <Label for="quantity">Quantity</Label>
               <Input id="quantity" type="number" v-model="form.quantity" placeholder="Product Quantity" />
               <InputError :message="form.errors.quantity" />
             </div>
           </div>
 
-          <!-- Brand -->
-          <div class="grid gap-2">
-            <Label for="brand" class="sr-only">Brand</Label>
-            <Input id="brand" type="text" v-model="form.brand" placeholder="Product Brand" />
-            <InputError :message="form.errors.brand" />
-          </div>
-
-          <!-- Store -->
-          <div class="grid gap-2">
-            <Label for="store_id" class="sr-only">Store</Label>
-            <Select
-              id="store_id"
-              placeholder="Select store"
-              v-model="form.store_id"
-              :options="stores"
-            />
-            <InputError :message="form.errors.store_id" />
-          </div>
-
           <!-- Description -->
           <div class="grid gap-2">
-            <Label for="description" class="sr-only">Description</Label>
+            <Label for="description">Description</Label>
             <Textarea
               id="description"
               v-model="form.description"

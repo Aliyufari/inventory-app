@@ -14,8 +14,16 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        $categories = Category::latest()
-            ->paginate(10)->through(fn($category) => [
+        $query = Category::query();
+
+        if ($search = request('search')) {
+            $query->where('name', 'like', "%{$search}%");
+        }
+
+        $categories = $query->latest()
+            ->paginate(15)
+            ->withQueryString()
+            ->through(fn($category) => [
                 'id' => $category->id,
                 'name' => $category->name,
                 'description' => $category->description,
@@ -115,15 +123,15 @@ class CategoryController extends Controller
         try {
             $category->delete();
 
-            return redirect()->back()->with([
+            return response()->json([
                 'status' => true,
-                'message' => 'Category deleted successfully'
-            ]);
+                'message' => 'Category deleted successfully',
+            ], 200);
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors([
+            return response()->json([
                 'status' => false,
-                'errors' => $e->getMessage()
-            ]);
+                'message' => $e->getMessage(),
+            ], 500);
         }
     }
 }

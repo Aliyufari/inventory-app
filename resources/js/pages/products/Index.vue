@@ -13,6 +13,8 @@ import DeleteProduct from "@/pages/products/DeleteProduct.vue"
 import { Button } from "@/components/ui/button"
 import { useProduct } from "@/stores/products"
 import { BriefcaseMedical } from "lucide-vue-next"
+import Pagination from "@/pages/components/Pagination.vue"
+import SearchInput from "@/pages/components/SeachInput.vue"
 
 interface Props {
   products?: unknown[]
@@ -28,13 +30,16 @@ const authUser = page.props.auth.user as User
 const form = useForm({ name: authUser.name, email: authUser.email })
 
 const productStore = useProduct()
-// const products = computed(() => productStore.products)
 
 onMounted(() => {
   if (!productStore.products.length) {
     productStore.fetchProducts()
   }
 })
+
+const handleSearch = () => {
+  productStore.fetchProducts(1) 
+}
 </script>
 
 <template>
@@ -50,11 +55,29 @@ onMounted(() => {
 
       <div class="space-y-5 sm:space-y-6">
         <ComponentCard>
+          <!-- 🔍 Search input above the table -->
+          <div class="mb-4">
+            <SearchInput
+              v-model="productStore.search"
+              placeholder="Search products..."
+              @search="handleSearch"
+            />
+          </div>
+
+          <!-- Products Table -->
           <ProductsTable
-            :data="products"
+            :data="productStore.products"
             @edit="productStore.openModal('edit', $event)"
             @view="productStore.openModal('view', $event)"
             @delete="productStore.openModal('delete', $event)"
+          />
+
+          <!-- Pagination -->
+          <Pagination
+            v-if="productStore.pagination"
+            :links="productStore.pagination.links"
+            :meta="productStore.pagination.meta"
+            :onPageChange="page => productStore.fetchProducts(page)"
           />
         </ComponentCard>
       </div>

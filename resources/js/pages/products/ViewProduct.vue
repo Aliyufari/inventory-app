@@ -65,11 +65,23 @@ const storeOption = computed(() =>
           <Label>Name</Label>
           <Input :model-value="props.product?.name" disabled />
         </div>
-
-        <!-- Categories -->
+        
+        <!-- Brand -->
         <div class="grid gap-2">
-          <Label>Categories</Label>
-          <MultiSelect :model-value="categoryOptions.map(c => c.value)" :options="categoryOptions" disabled />
+          <Label>Brand</Label>
+          <Input :model-value="props.product?.brand" disabled />
+        </div>
+
+        <!-- Categories & Stores -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="grid gap-2">
+            <Label>Categories</Label>
+            <MultiSelect :model-value="categoryOptions.map(c => c.value)" :options="categoryOptions" disabled />
+          </div>
+          <div class="grid gap-2">
+            <Label>Store</Label>
+            <Select :model-value="storeOption[0]?.value" :options="storeOption" disabled />
+          </div>
         </div>
 
         <!-- Price & Quantity -->
@@ -82,18 +94,6 @@ const storeOption = computed(() =>
             <Label>Quantity</Label>
             <Input :model-value="props.product?.quantity" disabled />
           </div>
-        </div>
-
-        <!-- Brand -->
-        <div class="grid gap-2">
-          <Label>Brand</Label>
-          <Input :model-value="props.product?.brand" disabled />
-        </div>
-
-        <!-- Store -->
-        <div class="grid gap-2">
-          <Label>Store</Label>
-          <Select :model-value="storeOption[0]?.value" :options="storeOption" disabled />
         </div>
 
         <!-- Description -->

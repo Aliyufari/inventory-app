@@ -11,7 +11,9 @@ class StoreInventoryRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        // For now allow all authenticated users
+        // You can add role/permission logic here later
+        return true;
     }
 
     /**
@@ -22,7 +24,17 @@ class StoreInventoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'customer' => 'nullable|string',
+            'payment_method' => 'required|string|in:cash,card,transfer',
+            'subtotal' => 'required|numeric|min:0',
+            'discount' => 'nullable|numeric|min:0',
+            'tax' => 'nullable|numeric|min:0',
+            'total' => 'required|numeric|min:0',
+            'note' => 'nullable|string|max:500',
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.price' => 'required|numeric|min:0',
         ];
     }
 }

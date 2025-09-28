@@ -13,7 +13,7 @@ class RoleController extends Controller
         $roles = Role::all();
 
         return response()->json([
-            'success' => true,
+            'status' => true,
             'roles' => $roles,
         ]);
     }

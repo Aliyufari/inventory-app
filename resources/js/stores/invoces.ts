@@ -198,7 +198,7 @@ interface InvoiceState {
   isGenerating: boolean
 }
 
-export const useInvoiceStore = defineStore('invoice', {
+export const useInvoice = defineStore('invoice', {
   state: (): InvoiceState => ({
     invoicePDFDataURL: null,
     isGenerating: false

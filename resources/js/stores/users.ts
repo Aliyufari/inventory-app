@@ -4,10 +4,11 @@ import type { User } from '@/types'
 
 export const useUser = defineStore('users', {
   state: () => ({
-    users: [] as User[],                // actual list
+    users: [] as User[],                  // actual list
     pagination: null as Record<string, any> | null, // meta + links
-    modalType: null as string | null,   // 'view' | 'edit' | 'delete' | 'add'
+    modalType: null as string | null,     // 'view' | 'edit' | 'delete' | 'add'
     selectedUser: null as User | null,
+    search: '' as string,                 // 🔍 new search state
     loading: false,
     error: null as string | null,
   }),
@@ -18,7 +19,10 @@ export const useUser = defineStore('users', {
       this.error = null
 
       try {
-        const { data } = await axios.get(route('users.index', { page }))
+        const { data } = await axios.get(route('users.index'), {
+          params: { page, search: this.search }, // ✅ search included
+        })
+
         this.users = data.users.data || []
         this.pagination = {
           links: data.users.links,
@@ -34,7 +38,7 @@ export const useUser = defineStore('users', {
 
     // ✅ add freshly created user to store
     addUser(user: User) {
-      this.users.unshift(user) // put at top of table
+      this.users.unshift(user)
     },
 
     // ✅ update existing user in store
@@ -45,13 +49,40 @@ export const useUser = defineStore('users', {
       }
     },
 
-    // ✅ remove deleted user from store
-    removeUser(userId: number) {
-      this.users = this.users.filter((u) => u.id !== userId)
+    async deleteUser(id: string) {
+      this.loading = true
+      this.error = null
+
+      try {
+        const { data } = await axios.delete(route('users.delete', id))
+
+        if (data.status) {
+          this.users = this.users.filter((s) => s.id !== id)
+
+          this.closeModal()
+          await this.fetchUsers()
+
+          // (Optional) Show toast/snackbar
+          // toast.success(data.message)
+        } else {
+          this.error = data.message || 'Failed to delete user'
+        }
+      } catch (error: any) {
+        console.error('Error deleting user:', error)
+        this.error = error.message || 'Failed to delete user'
+      } finally {
+        this.loading = false
+      }
+    },
+
+    // ✅ reset search and reload
+    resetSearch() {
+      this.search = ''
+      this.fetchUsers(1)
     },
 
     openModal(type: string, user: User | null = null) {
-      this.closeModal() // reset before opening
+      this.closeModal()
       this.modalType = type
       this.selectedUser = user
     },

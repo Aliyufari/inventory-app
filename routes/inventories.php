@@ -5,11 +5,9 @@ use App\Http\Controllers\InventoryController;
 
 
 Route::middleware('auth')->group(function () {
-    Route::prefix('inventories')->group(function () {
-        Route::get('/', [InventoryController::class, 'index'])->name('index');
-        Route::post('/', [InventoryController::class, 'store'])->name('store');
-        Route::get('/{inventory}', [InventoryController::class, 'show'])->name('show');
-        Route::put('/{inventory}', [InventoryController::class, 'update'])->name('update');
-        Route::delete('/{inventory}', [InventoryController::class, 'destroy'])->name('destroy');
-    });
+    Route::get('/inventories', [InventoryController::class, 'index'])->name('inventories.index');
+    Route::post('/inventories', [InventoryController::class, 'store'])->name('inventories.store');
+    Route::get('/inventories/{inventory}', [InventoryController::class, 'show'])->name('inventories.show');
+    Route::put('/inventories/{inventory}', [InventoryController::class, 'update'])->name('inventories.update');
+    Route::delete('/inventories/{inventory}', [InventoryController::class, 'destroy'])->name('inventories.destroy');
 });

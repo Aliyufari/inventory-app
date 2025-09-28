@@ -17,6 +17,7 @@ const productStore = useProduct()
             <th class="px-5 py-3 text-left whitespace-nowrap">Brand</th>
             <th class="px-5 py-3 text-left whitespace-nowrap">Categories</th>
             <th class="px-5 py-3 text-left whitespace-nowrap">Store</th>
+            <th class="px-5 py-3 text-left whitespace-nowrap">Price</th>
             <th class="px-5 py-3 text-left whitespace-nowrap">Quantity</th>
             <th class="px-5 py-3 text-left">Description</th> <!-- ✅ no nowrap -->
             <th class="px-5 py-3 text-left whitespace-nowrap"></th>
@@ -46,6 +47,11 @@ const productStore = useProduct()
             <!-- Store -->
             <td class="px-5 py-4 whitespace-nowrap">
               {{ product.store?.name || '—' }}
+            </td>
+
+            <!-- Price -->
+            <td class="px-5 py-4 whitespace-nowrap">
+              {{ product.price }}
             </td>
 
             <!-- Quantity -->

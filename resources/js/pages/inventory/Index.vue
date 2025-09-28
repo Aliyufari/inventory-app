@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue"
-import { Head, useForm, usePage } from "@inertiajs/vue3"
+import { onMounted } from "vue"
+import { Head, usePage, useForm } from "@inertiajs/vue3"
 import AppLayout from "@/layouts/AppLayout.vue"
 import InventoryLayout from "@/layouts/inventory/Layout.vue"
 import { type BreadcrumbItem, type SharedData, type User } from "@/types"
@@ -13,30 +13,27 @@ import DeleteInventory from "@/pages/inventory/DeleteInventory.vue"
 import { Button } from "@/components/ui/button"
 import { useInventory } from "@/stores/inventory"
 import { Plus } from "lucide-vue-next"
-
-interface Props {
-  inventories?: unknown[]
-}
-
-defineProps<Props>()
+import Pagination from "@/pages/components/Pagination.vue"
+import SearchInput from "@/pages/components/SeachInput.vue"
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: "Inventory", href: "/inventory" }]
 
 const page = usePage<SharedData>()
 const authUser = page.props.auth.user as User
-
 const form = useForm({ name: authUser.name, email: authUser.email })
 
 const inventoryStore = useInventory()
-const inventories = computed(() => inventoryStore.inventories)
 
 onMounted(() => {
-  if (!inventoryStore.inventories.length) {
+  if (!inventoryStore.inventories?.length) {
     inventoryStore.fetchInventories()
   }
 })
-</script>
 
+const handleSearch = () => {
+  inventoryStore.fetchInventories(1) 
+}
+</script>
 <template>
   <AppLayout :breadcrumbs="breadcrumbs">
     <Head title="Inventory" />
@@ -50,11 +47,26 @@ onMounted(() => {
 
       <div class="space-y-5 sm:space-y-6">
         <ComponentCard>
+          <div class="mb-4">
+            <SearchInput
+              v-model="inventoryStore.search"
+              placeholder="Search inventory..."
+              @search="handleSearch"
+            />
+          </div>
+
           <InventoryTable
-            :data="inventories"
+            :data="inventoryStore.inventories"
             @edit="inventoryStore.openModal('edit', $event)"
             @view="inventoryStore.openModal('view', $event)"
             @delete="inventoryStore.openModal('delete', $event)"
+          />
+
+          <Pagination
+            v-if="inventoryStore.pagination"
+            :links="inventoryStore.pagination.links"
+            :meta="inventoryStore.pagination.meta"
+            :onPageChange="page => inventoryStore.fetchInventories(page)"
           />
         </ComponentCard>
       </div>

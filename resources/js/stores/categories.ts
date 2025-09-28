@@ -8,6 +8,7 @@ export const useCategory = defineStore('categories', {
     pagination: null as Record<string, any> | null,
     modalType: null as string | null,
     selectedCategory: null as Category | null,
+    search: '' as string,  // 🔍 added search
     loading: false,
     error: null as string | null,
   }),
@@ -17,24 +18,11 @@ export const useCategory = defineStore('categories', {
       this.loading = true
       this.error = null
 
-      // try {
-      //   const { data } = await axios.get(route('categories.index', { page }))
-      //   this.categories = data.categories.data || []
-      //   console.log("Eroor: " + data.categories);
-        
-      //   this.pagination = {
-      //     links: data.categories.links,
-      //     meta: data.categories.meta,
-      //   }
-      // } catch (error: any) {
-      //   console.error('Error fetching categories:', error)
-      //   this.error = error.message || 'Failed to fetch categories'
-      // } finally {
-      //   this.loading = false
-      // }
-
       try {
-        const { data } = await axios.get(route('categories.index', { page }))
+        const { data } = await axios.get(route('categories.index'), {
+          params: { page, search: this.search }, // ✅ search support
+        })
+
         this.categories = data.categories.data || []
         this.pagination = {
           links: data.categories.links,
@@ -48,20 +36,35 @@ export const useCategory = defineStore('categories', {
       }
     },
 
-    async deleteCategory(id: number) {
+    async deleteCategory(id: string) {
       this.loading = true
       this.error = null
 
       try {
-        await axios.delete(route('categories.destroy', id))
-        this.categories = this.categories.filter((c) => c.id !== id) // remove locally
-        this.closeModal()
+        const { data } = await axios.delete(route('categories.delete', id))
+
+        if (data.status) {
+          this.categories = this.categories.filter((s) => s.id !== id)
+
+          this.closeModal()
+          await this.fetchCategories()
+
+          // (Optional) Show toast/snackbar
+          // toast.success(data.message)
+        } else {
+          this.error = data.message || 'Failed to delete product'
+        }
       } catch (error: any) {
-        console.error('Error deleting category:', error)
-        this.error = error.message || 'Failed to delete category'
+        console.error('Error deleting product:', error)
+        this.error = error.message || 'Failed to delete product'
       } finally {
         this.loading = false
       }
+    },
+
+    resetSearch() {
+      this.search = ''
+      this.fetchCategories(1)
     },
 
     openModal(type: string, category: Category | null = null) {

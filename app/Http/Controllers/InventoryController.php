@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\StoreInventoryRequest;
 use App\Http\Requests\UpdateInventoryRequest;
+use App\Models\Invoice;
 
 class InventoryController extends Controller
 {
@@ -17,11 +18,21 @@ class InventoryController extends Controller
      */
     public function index()
     {
-        $inventories = Inventory::with(['user', 'items.product'])
-            ->latest()
-            ->paginate(10)
+        $query = Inventory::with(['user', 'items.product']);
+
+        if ($search = request('search')) {
+            $query->where('invoice_number', 'like', "%{$search}%")
+                ->orWhere('status', 'like', "%{$search}%")
+                ->orWhere('total', 'like', "%{$search}%")
+                ->orWhere('payment_method', 'like', "%{$search}%")
+                ->orWhere('created_at', 'like', "%{$search}%")
+                ->orWhereHas('user', fn($q) => $q->where('name', 'like', "%{$search}%"));
+        }
+
+        $inventories = $query->latest()
+            ->paginate(15)
+            ->withQueryString()
             ->through(fn($inventory) => [
-                'id' => $inventory->id,
                 'invoice_number' => $inventory->invoice_number,
                 'user' => [
                     'id' => $inventory->user?->id,
@@ -53,10 +64,11 @@ class InventoryController extends Controller
         try {
             $data = $request->validated();
 
-            // Create inventory transaction
+            // Create inventory transaction 
             $inventory = Inventory::create([
                 'user_id'        => auth()->id(),
-                'invoice_number' => Inventory::generateInvoiceNumber(),
+                'invoice_number' => Invoice::generateInvoiceNumber(),
+                'type' => 'purchase',
                 'payment_method' => $data['payment_method'],
                 'subtotal'       => $data['subtotal'],
                 'discount'       => $data['discount'] ?? 0,
