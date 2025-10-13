@@ -15,7 +15,7 @@ class ProductSeeder extends Seeder
     public function run(): void
     {
         // Ensure the store exists
-        $store = Store::firstOrCreate(['name' => 'Main Store']);
+        $store = Store::firstOrCreate(['name' => 'Main']);
 
         // Ensure categories exist
         $antiBioCategory = Category::firstOrCreate(['name' => 'Antibiotics']);
@@ -25,7 +25,9 @@ class ProductSeeder extends Seeder
         $paracetamol = Product::firstOrCreate([
             'name' => 'Paracetamol',
             'brand' => 'M & B',
-            'price' => 200,
+            'buying_price' => 200,
+            'retail_price' => 300,
+            'wholesale_price' => 250,
             'quantity' => 100,
             'store_id' => $store->id,
             'description' => '',
@@ -37,7 +39,9 @@ class ProductSeeder extends Seeder
         $arthimeter = Product::firstOrCreate([
             'name' => 'Arthimeter',
             'brand' => 'India',
-            'price' => 300,
+            'buying_price' => 200,
+            'retail_price' => 300,
+            'wholesale_price' => 250,
             'quantity' => 100,
             'store_id' => $store->id,
             'description' => '',

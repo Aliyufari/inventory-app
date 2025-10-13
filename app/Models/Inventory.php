@@ -14,19 +14,32 @@ class Inventory extends Model
     use HasFactory, HasUuids;
 
     protected $fillable = [
+        'customer_type',
+        'tax',
+        'payment_method',
         'type',
         'user_id',
+        'customer_id',
         'store_id',
         'subtotal',
         'discount',
         'total',
         'status',
+        'note',
     ];
 
     // An inventory transaction belongs to a user (cashier/pharmacist)
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(
+            Customer::class,
+            'customer_id'
+        );
     }
 
     // An inventory transaction is for a store
@@ -45,5 +58,14 @@ class Inventory extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            $model->invoice_number = 'INV-' . now()->format('Ymd') . '-' . str_pad(Inventory::count() + 1, 4, '0', STR_PAD_LEFT);
+        });
     }
 }

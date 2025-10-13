@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\PaymentMethod;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -12,14 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('payments', function (Blueprint $table) {
+        Schema::create('customers', function (Blueprint $table) {
             $table->uuid('id')->primary();
-
-            $table->foreignUuid('inventory_id')->constrained('inventories')->cascadeOnDelete();
-
-            $table->enum('method', PaymentMethod::values())->default('cash');
-            $table->decimal('amount', 12, 2);
-
+            $table->string('name')->nullable();
+            $table->string('email')->nullable()->unique();
+            // $table->enum('type', ['wholesale', 'retail', 'dafault'])->default('dafault');
+            $table->string('phone')->nullable()->unique();
+            $table->text('address')->nullable();
             $table->timestamps();
         });
     }
@@ -29,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('payments');
+        Schema::dropIfExists('customers');
     }
 };

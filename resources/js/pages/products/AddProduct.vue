@@ -26,8 +26,10 @@ const productStore = useProduct()
 // Form state
 const form = useForm({
   name: '',
-  category_ids: [] as string[], // updated: multiple categories
-  price: '',
+  category_ids: [] as string[],
+  buying_price: '',
+  retail_price: '',
+  wholesale_price: '',
   brand: '',
   quantity: '',
   store_id: '',
@@ -77,88 +79,144 @@ const addProduct = (e: Event) => {
 }
 </script>
 
-
 <template>
-  <div class="space-y-6">
-    <Dialog 
-      :open="productStore.modalType === 'add'" 
-      @update:open="val => { if (!val) productStore.closeModal() }"
+  <Dialog 
+    :open="productStore.modalType === 'add'" 
+    @update:open="val => { if (!val) productStore.closeModal() }"
+  >
+    <!-- Responsive modal height -->
+    <DialogContent
+      class="
+        w-full 
+        sm:max-w-5xl   <!-- Increased from 2xl to 5xl -->
+        max-w-[calc(100%-1rem)] 
+        rounded-none sm:rounded-2xl 
+        h-[100vh] sm:h-auto 
+        overflow-y-auto 
+        p-4 sm:p-6
+      "
     >
-      <DialogContent class="sm:max-w-2xl max-w-[calc(100%-2rem)]">
-        <form class="space-y-6" @submit="addProduct">
-          <DialogHeader class="space-y-3">
-            <DialogTitle>Add product</DialogTitle>
-          </DialogHeader>
+      <form class="space-y-6" @submit="addProduct">
+        <DialogHeader class="space-y-3 text-center sm:text-left">
+          <DialogTitle class="text-lg sm:text-xl font-semibold">
+            Add Product
+          </DialogTitle>
+        </DialogHeader>
 
-          <!-- Name -->
+        <!-- Name -->
+        <div class="grid gap-2">
+          <Label for="name">Name</Label>
+          <Input id="name" type="text" v-model="form.name" placeholder="Product Name" />
+          <InputError :message="form.errors.name" />
+        </div>
+
+        <!-- Brand -->
+        <div class="grid gap-2">
+          <Label for="brand">Brand</Label>
+          <Input id="brand" type="text" v-model="form.brand" placeholder="Product Brand" />
+          <InputError :message="form.errors.brand" />
+        </div>
+
+        <!-- Categories & Stores -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div class="grid gap-2">
-            <Label for="name">Name</Label>
-            <Input id="name" type="text" v-model="form.name" placeholder="Product Name" />
-            <InputError :message="form.errors.name" />
-          </div>
-
-          <!-- Brand -->
-          <div class="grid gap-2">
-            <Label for="brand">Brand</Label>
-            <Input id="brand" type="text" v-model="form.brand" placeholder="Product Brand" />
-            <InputError :message="form.errors.brand" />
-          </div>
-
-          <!-- Categories & Stores -->
-          <div class="grid grid-cols-2 gap-4">
-            <div class="grid gap-2">
-              <Label for="category_ids">Categories</Label>
-              <MultiSelect
-                id="category_ids"
-                placeholder="Select categories"
-                v-model="form.category_ids"
-                :options="categories"
-              />
-              <InputError :message="form.errors.category_ids" />
-            </div>
-            <div class="grid gap-2">
-              <Label for="store_id">Store</Label>
-              <Select
-                id="store_id"
-                placeholder="Select store"
-                v-model="form.store_id"
-                :options="stores"
-              />
-              <InputError :message="form.errors.store_id" />
-            </div>
-          </div>
-
-          <!-- Price & Quantity in one row -->
-          <div class="grid grid-cols-2 gap-4">
-            <div class="grid gap-2">
-              <Label for="price">Price</Label>
-              <Input id="price" type="number" v-model="form.price" placeholder="Product Price" />
-              <InputError :message="form.errors.price" />
-            </div>
-            <div class="grid gap-2">
-              <Label for="quantity">Quantity</Label>
-              <Input id="quantity" type="number" v-model="form.quantity" placeholder="Product Quantity" />
-              <InputError :message="form.errors.quantity" />
-            </div>
-          </div>
-
-          <!-- Description -->
-          <div class="grid gap-2">
-            <Label for="description">Description</Label>
-            <Textarea
-              id="description"
-              v-model="form.description"
-              placeholder="Description"
+            <Label for="category_ids">Categories</Label>
+            <MultiSelect
+              id="category_ids"
+              placeholder="Select categories"
+              v-model="form.category_ids"
+              :options="categories"
             />
-            <InputError :message="form.errors.description" />
+            <InputError :message="form.errors.category_ids" />
           </div>
+          <div class="grid gap-2">
+            <Label for="store_id">Store</Label>
+            <Select
+              id="store_id"
+              placeholder="Select store"
+              v-model="form.store_id"
+              :options="stores"
+            />
+            <InputError :message="form.errors.store_id" />
+          </div>
+          <div class="grid gap-2">
+            <Label for="quantity">Quantity</Label>
+            <Input 
+              id="quantity" 
+              type="number" 
+              v-model="form.quantity" 
+              placeholder="Product Quantity" 
+            />
+            <InputError :message="form.errors.quantity" />
+          </div>
+        </div>
 
-          <DialogFooter class="gap-2">
-            <Button type="button" variant="secondary" @click="productStore.closeModal()">Cancel</Button>
-            <Button type="submit" :disabled="form.processing">Submit</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  </div>
+        <!-- Price & Quantity in one row -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="grid gap-2">
+            <Label for="buying_price">Buying Price</Label>
+            <Input 
+              id="buying_price" 
+              type="number" 
+              v-model="form.buying_price" 
+              placeholder="Buying Price" 
+            />
+            <InputError :message="form.errors.buying_price" />
+          </div>
+          <div class="grid gap-2">
+            <Label for="wholesale_price">Wholesale Price</Label>
+            <Input 
+              id="wholesale_price" 
+              type="number" 
+              v-model="form.wholesale_price" 
+              placeholder="Wholesale Price" 
+            />
+            <InputError :message="form.errors.wholesale_price" />
+          </div>
+          <div class="grid gap-2">
+            <Label for="retail_price">Retail Price</Label>
+            <Input 
+              id="retail_price" 
+              type="number" 
+              v-model="form.retail_price" 
+              placeholder="Retail Price" 
+            />
+            <InputError :message="form.errors.retail_price" />
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="grid gap-2">
+          <Label for="description">Description</Label>
+          <Textarea
+            id="description"
+            v-model="form.description"
+            placeholder="Description"
+            class="resize-none"
+            rows="3"
+          />
+          <InputError :message="form.errors.description" />
+        </div>
+
+        <!-- Footer Buttons -->
+        <DialogFooter class="flex flex-col sm:flex-row gap-2 sm:justify-end">
+          <Button 
+            type="button" 
+            variant="secondary" 
+            class="w-full sm:w-auto" 
+            @click="productStore.closeModal()"
+          >
+            Cancel
+          </Button>
+          <Button 
+            type="submit" 
+            :disabled="form.processing"
+            class="w-full sm:w-auto"
+          >
+            Submit
+          </Button>
+        </DialogFooter>
+      </form>
+    </DialogContent>
+  </Dialog>
 </template>

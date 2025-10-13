@@ -10,6 +10,7 @@ import AddInventory from "@/pages/inventory/AddInventory.vue"
 import EditInventory from "@/pages/inventory/EditInventory.vue"
 import ViewInventory from "@/pages/inventory/ViewInventory.vue"
 import DeleteInventory from "@/pages/inventory/DeleteInventory.vue"
+import InvoicePreview from "@/pages/inventory/InvoivePreview.vue" // ✅ Import here
 import { Button } from "@/components/ui/button"
 import { useInventory } from "@/stores/inventory"
 import { Plus } from "lucide-vue-next"
@@ -34,6 +35,7 @@ const handleSearch = () => {
   inventoryStore.fetchInventories(1) 
 }
 </script>
+
 <template>
   <AppLayout :breadcrumbs="breadcrumbs">
     <Head title="Inventory" />
@@ -55,12 +57,7 @@ const handleSearch = () => {
             />
           </div>
 
-          <InventoryTable
-            :data="inventoryStore.inventories"
-            @edit="inventoryStore.openModal('edit', $event)"
-            @view="inventoryStore.openModal('view', $event)"
-            @delete="inventoryStore.openModal('delete', $event)"
-          />
+          <InventoryTable />
 
           <Pagination
             v-if="inventoryStore.pagination"
@@ -90,6 +87,8 @@ const handleSearch = () => {
         :inventory="inventoryStore.selected"
         @deleted="inventoryStore.fetchInventories()"
       />
+
+      <InvoicePreview />
     </InventoryLayout>
   </AppLayout>
 </template>

@@ -18,15 +18,18 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
-import { Role } from '@/types'
+import { Role, Store } from '@/types'
+import MultiSelect from '@/components/ui/multiselect/MultiSelect.vue'
 
 const usersStore = useUser()
 const passwordInput = ref<HTMLInputElement | null>(null);
 const roles = ref<{ label: string; value: string }[]>([]);
+const stores = ref<{ label: string; value: string }[]>([]);
 
 const form = useForm({
   email: '',
   role_id: '',
+  store_ids: [] as string[],
   gender: '',
   password: '',
 })
@@ -52,11 +55,21 @@ const addUser = (e: Event) => {
 
 onMounted(async () => {
   try {
-    const { data } = await axios.get(route('roles.index'))
-    roles.value = data.roles.map((role: Role) => ({
+    const [roleRes, storeRes] = await Promise.all([
+      axios.get(route("roles.index")),
+      axios.get(route("stores.api")),
+    ])
+
+    roles.value = roleRes.data.roles.map((role: Role) => ({
       label: role.name.charAt(0).toUpperCase() + role.name.slice(1),
       value: role.id,
     }))
+
+    stores.value = storeRes.data.stores.map((store: Store) => ({
+      label: store.name.charAt(0).toUpperCase() + store.name.slice(1),
+      value: store.id,
+    }))
+
   } catch (error) {
     console.error('Error fetching roles:', error)
   }
@@ -69,7 +82,7 @@ onMounted(async () => {
       :open="usersStore.modalType === 'add'" 
       @update:open="val => { if (!val) usersStore.closeModal() }"
     >
-      <DialogContent>
+      <DialogContent class="!max-w-none w-[95vw] sm:w-[80vw] md:w-[60vw] lg:w-[50vw] xl:w-[45vw]">
         <form class="space-y-6" @submit="addUser">
           <DialogHeader class="space-y-3">
             <DialogTitle>Add user</DialogTitle>
@@ -79,24 +92,36 @@ onMounted(async () => {
           </DialogHeader>
 
           <div class="grid gap-2">
-            <Label for="email" class="sr-only">Email</Label>
+            <Label for="email">Email</Label>
             <Input id="email" type="email" v-model="form.email" placeholder="Email" />
             <InputError :message="form.errors.email" />
           </div>
 
-          <div class="grid gap-2">
-            <Label for="role" class="sr-only">Role</Label>
-            <Select
-              id="role"
-              v-model="form.role_id"
-              placeholder="Select role"
-              :options="roles"
-            />
-            <InputError :message="form.errors.role_id" />
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="grid gap-2">
+              <Label for="role">Role</Label>
+              <Select
+                id="role"
+                v-model="form.role_id"
+                placeholder="Select role"
+                :options="roles"
+              />
+              <InputError :message="form.errors.role_id" />
+            </div>
+            <div class="grid gap-2">
+              <Label for="store_ids">Store(s)</Label>
+              <MultiSelect
+                id="store_ids"
+                placeholder="Select store(s)"
+                v-model="form.store_ids"
+                :options="stores"
+              />
+              <InputError :message="form.errors.store_ids" />
+            </div>
           </div>
 
           <div class="grid gap-2">
-            <Label for="gender" class="sr-only">Gender</Label>
+            <Label for="gender">Gender</Label>
             <Select
               id="gender"
               placeholder="Select gender"
@@ -110,7 +135,7 @@ onMounted(async () => {
           </div>
 
           <div class="grid gap-2">
-            <Label for="password" class="sr-only">Password</Label>
+            <Label for="password">Password</Label>
             <Input
               id="password"
               type="password"

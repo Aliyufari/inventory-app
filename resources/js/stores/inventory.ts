@@ -7,7 +7,7 @@ export const useInventory = defineStore("inventory", {
     pagination: null as { links: any; meta: any } | null,
     modalType: null as string | null,
     selected: null as any | null,
-    search: "" as string, // 🔍 search state
+    search: "" as string,
     loading: false,
     error: null as string | null,
   }),
@@ -16,12 +16,10 @@ export const useInventory = defineStore("inventory", {
     async fetchInventories(page: number = 1) {
       this.loading = true
       this.error = null
-
       try {
         const { data } = await axios.get(route("inventories.index"), {
-          params: { page, search: this.search }, // ✅ pass search param
+          params: { page, search: this.search },
         })
-
         this.inventories = data.inventories.data || []
         this.pagination = {
           links: data.inventories.links,
@@ -38,18 +36,12 @@ export const useInventory = defineStore("inventory", {
     async deleteInventory(id: string) {
       this.loading = true
       this.error = null
-
       try {
         const { data } = await axios.delete(route('inventory.delete', id))
-
         if (data.status) {
           this.inventories = this.inventories.filter((s) => s.id !== id)
-
           this.closeModal()
           await this.fetchInventories()
-
-          // (Optional) Show toast/snackbar
-          // toast.success(data.message)
         } else {
           this.error = data.message || 'Failed to delete inventory'
         }
@@ -67,24 +59,26 @@ export const useInventory = defineStore("inventory", {
     },
 
     openModal(type: string, payload: any | null = null) {
-      this.closeModal()
+      console.log('📂 Opening modal:', type, payload)
       this.modalType = type
       this.selected = payload
     },
 
     closeModal() {
+      console.log('🚪 Closing inventory modal')
       this.modalType = null
       this.selected = null
     },
 
-    // ✅ local cache helpers
     addLocal(inventory: any) {
       this.inventories.unshift(inventory)
     },
+
     updateLocal(updated: any) {
       const idx = this.inventories.findIndex((i) => i.id === updated.id)
       if (idx !== -1) this.inventories[idx] = updated
     },
+
     removeLocal(id: number | string) {
       this.inventories = this.inventories.filter((i) => i.id !== id)
     },

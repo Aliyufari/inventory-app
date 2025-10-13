@@ -9,18 +9,16 @@ const currentPath = page.props.ziggy?.location
 </script>
 
 <template>
-  <div class="px-4 py-6">
+  <div class="px-4 py-6 max-w-full"> <!-- ✅ Added max-w-full -->
     <!-- Header -->
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0"> <!-- ✅ Same responsive header as products -->
       <Heading title="Inventory" description="Manage all transactions and stock records" />
-      <div>
-        <slot name="button" />
-      </div>
+      <div><slot name="button" /></div> <!-- ✅ Moved slot inside -->
     </div>
 
     <!-- Content -->
-    <div class="flex flex-col space-y-8 md:space-y-0 lg:flex-row lg:space-x-12 lg:space-y-0">
-      <div class="flex-1">
+    <div class="mt-6 flex flex-col lg:flex-row lg:space-x-12 gap-8"> <!-- ✅ Same structure as products -->
+      <div class="flex-1 min-w-0"> <!-- ✅ CRITICAL: Added min-w-0 -->
         <section class="space-y-12">
           <slot />
         </section>

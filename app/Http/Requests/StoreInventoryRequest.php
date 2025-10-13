@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\PaymentMethod;
+use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreInventoryRequest extends FormRequest
@@ -24,17 +26,32 @@ class StoreInventoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'customer' => 'nullable|string',
-            'payment_method' => 'required|string|in:cash,card,transfer',
-            'subtotal' => 'required|numeric|min:0',
-            'discount' => 'nullable|numeric|min:0',
-            'tax' => 'nullable|numeric|min:0',
-            'total' => 'required|numeric|min:0',
-            'note' => 'nullable|string|max:500',
-            'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|integer|min:1',
-            'items.*.price' => 'required|numeric|min:0',
+            'customer' => ['nullable', 'string'], // Can be UUID or name
+            'customer_type' => ['required', 'in:retail,wholesale'],
+
+            'payment_method' => [
+                'required',
+                'string',
+                Rule::in(PaymentMethod::values()),
+            ],
+
+            'store_id' => ['required', 'exists:stores,id'],
+            'discount' => ['nullable', 'numeric', 'min:0'],
+            'tax' => ['nullable', 'numeric', 'min:0'],
+            'note' => ['nullable', 'string', 'max:500'],
+
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.product_id' => ['required', 'exists:products,id'],
+            'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'items.*.price' => ['required', 'numeric', 'min:0'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'items.*.product_id.exists' => 'One or more products are invalid.',
+            'items.min' => 'At least one item is required.',
         ];
     }
 }

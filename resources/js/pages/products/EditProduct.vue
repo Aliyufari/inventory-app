@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import axios from 'axios'
 import { useProduct } from '@/stores/products'
@@ -13,7 +13,6 @@ import { Label } from '@/components/ui/label'
 import MultiSelect from '@/components/ui/multiselect/MultiSelect.vue'
 import Select from '@/components/ui/select/Select.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
-import { Product } from '@/types'
 
 // Pinia store
 const productStore = useProduct()
@@ -25,17 +24,20 @@ const props = defineProps<{ product: any }>()
 const form = useForm({
   name: '',
   category_ids: [] as string[],
-  price: '',
+  buying_price: '',
+  retail_price: '',
+  wholesale_price: '',
   brand: '',
   quantity: '',
-  store_id: '', 
-  description: '',
+  store_id: '',
+  description: ''
 })
 
-// Options for selects
+// Options
 const categories = ref<{ label: string; value: string }[]>([])
 const stores = ref<{ label: string; value: string }[]>([])
 
+// Fetch categories and stores
 onMounted(async () => {
   try {
     const [categoriesRes, storesRes] = await Promise.all([
@@ -45,12 +47,12 @@ onMounted(async () => {
 
     categories.value = categoriesRes.data.categories.map((c: any) => ({
       label: c.name.charAt(0).toUpperCase() + c.name.slice(1),
-      value: String(c.id),
+      value: c.id,
     }))
 
     stores.value = storesRes.data.stores.map((s: any) => ({
       label: s.name.charAt(0).toUpperCase() + s.name.slice(1),
-      value: String(s.id), // always string for consistency
+      value: s.id,
     }))
   } catch (error) {
     console.error('Error fetching categories/stores:', error)
@@ -58,21 +60,29 @@ onMounted(async () => {
 })
 
 // Prefill form when product changes
-watch(() => props.product, (p) => {
-  if (p) {
-    form.name = p.name ?? ''
-    form.category_ids = p.categories?.map((c: any) => String(c.id)) ?? []
-    form.price = p.price ?? ''
-    form.brand = p.brand ?? ''
-    form.quantity = p.quantity ?? ''
-    form.store_id = p.store.id
-    form.description = p.description ?? ''
-  }
-}, { immediate: true })
+watch(
+  () => props.product,
+  (p) => {
+    if (p) {
+      form.name = p.name ?? ''
+      form.category_ids = (p.categories ?? []).map((c: any) => String(c.id))
+      form.buying_price = p.buying_price ?? ''
+      form.retail_price = p.retail_price ?? ''
+      form.wholesale_price = p.wholesale_price ?? ''
+      form.brand = p.brand ?? ''
+      form.quantity = p.quantity ?? ''
+      form.store_id = p.store?.id ? String(p.store.id) : ''
+      form.description = p.description ?? ''
+    }
+  },
+  { immediate: true }
+)
 
 // Update product
 const updateProduct = (e: Event) => {
   e.preventDefault()
+  if (!props.product?.id) return
+
   form.put(route('products.update', props.product.id), {
     preserveScroll: true,
     onSuccess: () => {
@@ -88,19 +98,31 @@ const updateProduct = (e: Event) => {
     :open="productStore.modalType === 'edit'" 
     @update:open="val => { if (!val) productStore.closeModal() }"
   >
-    <DialogContent class="sm:max-w-2xl max-w-[calc(100%-2rem)]">
+    <DialogContent
+      class="
+        w-full 
+        sm:max-w-5xl 
+        max-w-[calc(100%-1rem)] 
+        rounded-none sm:rounded-2xl 
+        h-[100vh] sm:h-auto 
+        overflow-y-auto 
+        p-4 sm:p-6
+      "
+    >
       <form class="space-y-6" @submit="updateProduct">
-        <DialogHeader class="space-y-3">
-          <DialogTitle>Edit Product</DialogTitle>
+        <DialogHeader class="space-y-3 text-center sm:text-left">
+          <DialogTitle class="text-lg sm:text-xl font-semibold">
+            Edit Product
+          </DialogTitle>
         </DialogHeader>
 
         <!-- Name -->
         <div class="grid gap-2">
           <Label for="name">Name</Label>
-          <Input id="name" type="text" v-model="form.name" placeholder="Name" />
+          <Input id="name" type="text" v-model="form.name" placeholder="Product Name" />
           <InputError :message="form.errors.name" />
         </div>
-        
+
         <!-- Brand -->
         <div class="grid gap-2">
           <Label for="brand">Brand</Label>
@@ -108,8 +130,8 @@ const updateProduct = (e: Event) => {
           <InputError :message="form.errors.brand" />
         </div>
 
-        <!-- Categories & Store -->
-        <div class="grid grid-cols-2 gap-4">
+        <!-- Categories & Store & Quantity -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div class="grid gap-2">
             <Label for="category_ids">Categories</Label>
             <MultiSelect
@@ -124,25 +146,55 @@ const updateProduct = (e: Event) => {
             <Label for="store_id">Store</Label>
             <Select
               id="store_id"
+              placeholder="Select store"
               v-model="form.store_id"
               :options="stores"
-              placeholder="Select store"
             />
             <InputError :message="form.errors.store_id" />
           </div>
-        </div>
-
-        <!-- Price & Quantity -->
-        <div class="grid grid-cols-2 gap-4">
-          <div class="grid gap-2">
-            <Label for="price">Price</Label>
-            <Input id="price" type="number" v-model="form.price" placeholder="Product Price" />
-            <InputError :message="form.errors.price" />
-          </div>
           <div class="grid gap-2">
             <Label for="quantity">Quantity</Label>
-            <Input id="quantity" type="number" v-model="form.quantity" placeholder="Product Quantity" />
+            <Input 
+              id="quantity" 
+              type="number" 
+              v-model="form.quantity" 
+              placeholder="Product Quantity" 
+            />
             <InputError :message="form.errors.quantity" />
+          </div>
+        </div>
+
+        <!-- Prices -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="grid gap-2">
+            <Label for="buying_price">Buying Price</Label>
+            <Input 
+              id="buying_price" 
+              type="number" 
+              v-model="form.buying_price" 
+              placeholder="Buying Price" 
+            />
+            <InputError :message="form.errors.buying_price" />
+          </div>
+          <div class="grid gap-2">
+            <Label for="wholesale_price">Wholesale Price</Label>
+            <Input 
+              id="wholesale_price" 
+              type="number" 
+              v-model="form.wholesale_price" 
+              placeholder="Wholesale Price" 
+            />
+            <InputError :message="form.errors.wholesale_price" />
+          </div>
+          <div class="grid gap-2">
+            <Label for="retail_price">Retail Price</Label>
+            <Input 
+              id="retail_price" 
+              type="number" 
+              v-model="form.retail_price" 
+              placeholder="Retail Price" 
+            />
+            <InputError :message="form.errors.retail_price" />
           </div>
         </div>
 
@@ -153,14 +205,29 @@ const updateProduct = (e: Event) => {
             id="description"
             v-model="form.description"
             placeholder="Description"
+            class="resize-none"
+            rows="3"
           />
           <InputError :message="form.errors.description" />
         </div>
 
-        <!-- Actions -->
-        <DialogFooter class="gap-2">
-          <Button type="button" variant="secondary" @click="productStore.closeModal()">Cancel</Button>
-          <Button type="submit" :disabled="form.processing">Update</Button>
+        <!-- Footer Buttons -->
+        <DialogFooter class="flex flex-col sm:flex-row gap-2 sm:justify-end">
+          <Button 
+            type="button" 
+            variant="secondary" 
+            class="w-full sm:w-auto" 
+            @click="productStore.closeModal()"
+          >
+            Cancel
+          </Button>
+          <Button 
+            type="submit" 
+            :disabled="form.processing"
+            class="w-full sm:w-auto"
+          >
+            Update
+          </Button>
         </DialogFooter>
       </form>
     </DialogContent>

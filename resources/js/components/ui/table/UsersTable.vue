@@ -15,7 +15,6 @@ const usersStore = useUser()
             <th class="px-5 py-3 text-left whitespace-nowrap">#</th>
             <th class="px-5 py-3 text-left whitespace-nowrap">Profile</th>
             <th class="px-5 py-3 text-left whitespace-nowrap">Email</th>
-            <th class="px-5 py-3 text-left whitespace-nowrap">Role</th>
             <th class="px-5 py-3 text-left whitespace-nowrap">Gender</th>
             <th class="px-5 py-3 text-left whitespace-nowrap">Status</th>
             <th class="px-5 py-3 text-left whitespace-nowrap"></th>

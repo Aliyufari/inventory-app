@@ -17,9 +17,11 @@ const productStore = useProduct()
             <th class="px-5 py-3 text-left whitespace-nowrap">Brand</th>
             <th class="px-5 py-3 text-left whitespace-nowrap">Categories</th>
             <th class="px-5 py-3 text-left whitespace-nowrap">Store</th>
-            <th class="px-5 py-3 text-left whitespace-nowrap">Price</th>
+            <th class="px-5 py-3 text-left whitespace-nowrap">Buying Price</th>
+            <th class="px-5 py-3 text-left whitespace-nowrap">Wholesale Price</th>
+            <th class="px-5 py-3 text-left whitespace-nowrap">Retail Price</th>
             <th class="px-5 py-3 text-left whitespace-nowrap">Quantity</th>
-            <th class="px-5 py-3 text-left">Description</th> <!-- ✅ no nowrap -->
+            <th class="px-5 py-3 text-left">Description</th>
             <th class="px-5 py-3 text-left whitespace-nowrap"></th>
           </tr>
         </thead>
@@ -49,9 +51,19 @@ const productStore = useProduct()
               {{ product.store?.name || '—' }}
             </td>
 
-            <!-- Price -->
+            <!-- ✅ Buying Price -->
             <td class="px-5 py-4 whitespace-nowrap">
-              {{ product.price }}
+              {{ product.buying_price }}
+            </td>
+
+            <!-- Wholesale Price -->
+            <td class="px-5 py-4 whitespace-nowrap">
+              {{ product.wholesale_price }}
+            </td>
+
+            <!-- Retail Price -->
+            <td class="px-5 py-4 whitespace-nowrap">
+              {{ product.retail_price }}
             </td>
 
             <!-- Quantity -->
@@ -59,7 +71,7 @@ const productStore = useProduct()
               {{ product.quantity }}
             </td>
 
-            <!-- ✅ Description (wrapped text) -->
+            <!-- Description -->
             <td class="px-5 py-4 text-gray-700">
               {{ product.description || '—' }}
             </td>
@@ -94,14 +106,14 @@ const productStore = useProduct()
 
           <!-- Loading State -->
           <tr v-if="productStore.loading">
-            <td colspan="8" class="px-5 py-4 text-center text-gray-500">
+            <td colspan="11" class="px-5 py-4 text-center text-gray-500">
               Loading products...
             </td>
           </tr>
 
           <!-- Empty State -->
           <tr v-else-if="!productStore.loading && !productStore.products?.length">
-            <td colspan="8" class="px-5 py-4 text-center text-gray-500">
+            <td colspan="11" class="px-5 py-4 text-center text-gray-500">
               No products found
             </td>
           </tr>

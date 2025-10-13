@@ -29,7 +29,9 @@ class UpdateProductRequest extends FormRequest
                 'max:255',
                 Rule::unique('categories', 'name')->ignore($this->route('category'))
             ],
-            'price' => ['required', 'numeric'],
+            'buying_price' => ['required', 'numeric'],
+            'retail_price' => ['required', 'numeric'],
+            'wholesale_price' => ['required', 'numeric'],
             'quantity' => ['required', 'numeric'],
             'store_id' => ['required', 'string', 'exists:stores,id'],
             'category_ids' => ['required', 'array'],

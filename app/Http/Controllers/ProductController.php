@@ -29,7 +29,9 @@ class ProductController extends Controller
             ->through(fn($product) => [
                 'id' => $product->id,
                 'name' => $product->name,
-                'price' => $product->price,
+                'buying_price' => $product->buying_price,
+                'wholesale_price' => $product->wholesale_price,
+                'retail_price' => $product->retail_price,
                 'quantity' => $product->quantity,
                 'brand' => $product->brand,
                 'description' => $product->description,
@@ -58,32 +60,39 @@ class ProductController extends Controller
 
     public function list()
     {
-        $products = Product::latest()
-            ->get()
-            ->map(fn($product) => [
-                'id' => $product->id,
-                'name' => $product->name,
-                'price' => $product->price,
-                'quantity' => $product->quantity,
-                'brand' => $product->brand,
-                'description' => $product->description,
-                'store' => $product->store
-                    ? [
-                        'id' => $product->store->id,
-                        'name' => $product->store->name,
-                    ]
-                    : null,
-                'categories' => $product->categories->map(fn($c) => [
-                    'id' => $c->id,
-                    'name' => $c->name,
-                ]),
-                'created_at' => $product->created_at,
-                'updated_at' => $product->updated_at,
-            ]);
+        $query = Product::with(['store', 'categories'])->latest();
 
-        return response()->json([
-            'products' => $products,
+        if ($storeId = request('store_id')) {
+            $query->where('store_id', $storeId);
+        }
+
+        $products = $query->get()->map(fn($product) => [
+            'id' => $product->id,
+            'name' => $product->name,
+            'buying_price' => $product->buying_price,
+            'retail_price' => $product->retail_price,
+            'wholesale_price' => $product->wholesale_price,
+            'quantity' => $product->quantity,
+            'brand' => $product->brand,
+            'description' => $product->description,
+            'store' => $product->store
+                ? [
+                    'id' => $product->store->id,
+                    'name' => $product->store->name,
+                ]
+                : null,
+            'categories' => $product->categories->map(fn($c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+            ]),
+            'categories_string' => $product->categories->pluck('name')->join(', '),
+            'units_per_packet' => $product->units_per_packet,
+            'packets_per_carton' => $product->packets_per_carton,
+            'created_at' => $product->created_at,
+            'updated_at' => $product->updated_at,
         ]);
+
+        return response()->json(['products' => $products]);
     }
 
     /**

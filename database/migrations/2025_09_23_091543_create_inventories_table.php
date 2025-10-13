@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\PaymentMethod;
+use App\Models\Customer;
 use App\Models\User;
 use App\Models\Store;
 use Illuminate\Support\Facades\Schema;
@@ -15,20 +17,19 @@ return new class extends Migration
     {
         Schema::create('inventories', function (Blueprint $table) {
             $table->uuid('id')->primary();
-
-            $table->enum('type', ['purchase', 'sale', 'return', 'adjustment']);
-            // sale = customer buying, purchase = stock-in, etc.
-
+            $table->string('invoice_number')->unique();
+            $table->enum('payment_method', PaymentMethod::values());
+            // $table->enum('type', ['sale', 'purchase', 'return'])->default('sale'); // COMMENTED OUT
+            $table->enum('customer_type', ['retail', 'wholesale']);
             $table->foreignIdFor(User::class, 'user_id')->constrained()->cascadeOnDelete();
-            // who made the transaction (cashier, pharmacist)
-
+            $table->foreignIdFor(Customer::class, 'customer_id')->nullable()->constrained()->cascadeOnDelete();
             $table->foreignIdFor(Store::class, 'store_id')->constrained()->cascadeOnDelete();
-
             $table->decimal('subtotal', 12, 2)->default(0);
             $table->decimal('discount', 12, 2)->default(0);
+            $table->decimal('tax', 12, 2)->default(0);
             $table->decimal('total', 12, 2)->default(0);
             $table->enum('status', ['pending', 'completed', 'cancelled'])->default('completed');
-
+            $table->string('note')->nullable();
             $table->timestamps();
         });
     }

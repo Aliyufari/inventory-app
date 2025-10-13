@@ -17,11 +17,16 @@ class UserController extends Controller
      */
     public function index()
     {
-        $query = User::with(['role']);
+        $query = User::with(['role', 'stores']);
 
+        // Handle search
         if ($search = request('search')) {
-            $query->where('name', 'like', "%{$search}%")
-                ->orWhereHas('role', fn($q) => $q->where('name', 'like', "%{$search}%"));
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhereHas('role', fn($r) => $r->where('name', 'like', "%{$search}%"))
+                    ->orWhereHas('stores', fn($s) => $s->where('name', 'like', "%{$search}%"));
+            });
         }
 
         $users = $query->latest()
@@ -34,18 +39,24 @@ class UserController extends Controller
                 'email' => $user->email,
                 'gender' => $user->gender,
                 'status' => $user->status,
-                'role' => [
+                'role' => $user->role ? [
                     'id' => $user->role->id,
                     'name' => $user->role->name,
-                ],
-                'created_at' => $user->created_at,
-                'updated_at' => $user->updated_at,
+                ] : null,
+                'stores' => $user->stores->map(fn($store) => [
+                    'id' => $store->id,
+                    'name' => $store->name,
+                ]),
+                'created_at' => $user->created_at->toDateTimeString(),
+                'updated_at' => $user->updated_at->toDateTimeString(),
             ]);
 
+        // Handle API response
         if (request()->wantsJson()) {
             return response()->json(['users' => $users]);
         }
 
+        // Inertia response
         return Inertia::render('users/Index', [
             'users' => $users,
         ]);
@@ -59,20 +70,30 @@ class UserController extends Controller
         try {
             $data = $request->validated();
 
+            // Hash password
             $data['password'] = Hash::make($request->password);
 
+            // Create the user
             $user = User::create($data);
 
+            // Attach selected stores (if any)
+            if ($request->filled('store_ids')) {
+                $user->stores()->attach($request->store_ids);
+            }
+
+            // Fire Registered event
             event(new Registered($user));
 
+            // Respond success
             return redirect()->back()->with([
                 'status' => true,
-                'message' => 'User added successfully'
-            ], JsonResponse::HTTP_CREATED);
+                'message' => 'User added successfully',
+            ]);
         } catch (\Exception $e) {
+            // Respond error
             return redirect()->back()->withErrors([
                 'status' => false,
-                'errors' => $e->getMessage()
+                'errors' => $e->getMessage(),
             ]);
         }
     }
@@ -104,17 +125,27 @@ class UserController extends Controller
         try {
             $data = $request->validated();
 
+            // Update user fields
             $user->update($data);
+
+            // Sync the attached stores (replace old with new)
+            if ($request->filled('store_ids')) {
+                $user->stores()->sync($request->store_ids);
+            } else {
+                // If no stores provided, detach all
+                $user->stores()->detach();
+            }
+
             $user->refresh();
 
             return redirect()->back()->with([
                 'status' => true,
-                'message' => 'User added successfully'
+                'message' => 'User updated successfully',
             ]);
         } catch (\Exception $e) {
             return redirect()->back()->withErrors([
                 'status' => false,
-                'errors' => $e->getMessage()
+                'errors' => $e->getMessage(),
             ]);
         }
     }
