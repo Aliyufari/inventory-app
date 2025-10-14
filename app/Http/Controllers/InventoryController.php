@@ -68,7 +68,7 @@ class InventoryController extends Controller
 
         try {
             $data = $request->validated();
-
+            // dd($data);
             $customerId = $this->resolveCustomer($data['customer'] ?? null, $data['customer_type']);
 
             // 🔹 Validate stock, discount, and pricing logic
