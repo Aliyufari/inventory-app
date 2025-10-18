@@ -317,9 +317,6 @@ const submit = async (e: Event) => {
                 />
                 <p class="text-xs text-gray-500 mt-1">
                   Select existing customer or type new name (optional)
-                  <span v-if="filteredCustomerOptions.length > 0" class="text-blue-600">
-                    - {{ filteredCustomerOptions.length }} match{{ filteredCustomerOptions.length === 1 ? '' : 'es' }}
-                  </span>
                 </p>
               </div>
 
