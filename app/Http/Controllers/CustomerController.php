@@ -10,22 +10,28 @@ class CustomerController extends Controller
 {
     public function list(Request $request)
     {
-        $perPage = $request->get('per_page', 15);
-
-        $customers = Customer::withCount('transactions')
-            ->latest()
-            ->paginate($perPage);
+        $customers = Customer::latest()
+            ->get()
+            ->map(fn($customer) => [
+                'id' => $customer->id,
+                'name' => $customer->name,
+                'email' => $customer->email,
+                'phone' => $customer->phone,
+                'address' => $customer->address,
+                'description' => $customer->description,
+                'created_at' => $customer->created_at,
+                'updated_at' => $customer->updated_at,
+            ]);
 
         return response()->json([
-            'customers' => CustomerResource::collection($customers),
-            'status' => true,
-            'message' => 'Customers retrieved successfully'
+            'customers' => $customers,
         ]);
     }
 
     public function search(Request $request)
     {
         $query = $request->get('query', '');
+        dd($query);
 
         if (empty($query)) {
             return response()->json([
@@ -44,15 +50,15 @@ class CustomerController extends Controller
             ->limit(10)
             ->get(['id', 'name']);
 
-        // Custom format for search (compatible with SearchableSelect)
         $formattedCustomers = $customers->map(function ($customer) {
             return [
-                'value' => $customer->id,
-                'label' => $customer->name,
+                'id' => $customer->id,
                 'name' => $customer->name,
                 'email' => $customer->email,
-                'type' => $customer->type,
                 'phone' => $customer->phone,
+                'address' => $customer->address,
+                'created_at' => $customer->created_at,
+                'updated_at' => $customer->updated_at,
             ];
         });
 

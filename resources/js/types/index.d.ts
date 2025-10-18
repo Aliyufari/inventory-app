@@ -71,4 +71,38 @@ export interface Product {
     updated_at: date;
 }
 
+export interface InventoryItem {
+  id: string
+  product_id: string
+  product_name?: string
+  name?: string
+  product?: { name: string }
+  quantity: number
+  unit_price: number
+  price?: number
+  total: number
+}
+
+export interface Inventory {
+  id: string
+  invoice_number: string
+  type: string
+  user?: { name: string }
+  payment_method: string
+  status: string
+  subtotal: number
+  discount: number
+  tax: number
+  total: number
+  items?: InventoryItem[]
+  inventory_items?: InventoryItem[]
+  created_at?: string
+}
+
+export interface InvoiceState {
+  invoicePDFDataURL: string | null
+  isGenerating: boolean
+  showPreview: boolean
+}
+
 export type BreadcrumbItemType = BreadcrumbItem;

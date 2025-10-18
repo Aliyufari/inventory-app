@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, watch } from "vue"
-import { useInvoice } from "@/stores/invoices"
+import { useInventory } from "@/stores/inventory" // Updated import
 import {
   Dialog,
   DialogContent,
@@ -11,21 +11,21 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-const invoiceStore = useInvoice()
+const inventoryStore = useInventory() // Using the merged store
 
-const show = computed(() => invoiceStore.showPreview && !!invoiceStore.invoicePDFDataURL)
+const show = computed(() => inventoryStore.showPreview && !!inventoryStore.invoicePDFDataURL)
 
 const printInvoice = () => {
   console.log('🖨️ Initiating print...')
   
-  if (!invoiceStore.invoicePDFDataURL) {
+  if (!inventoryStore.invoicePDFDataURL) {
     console.error('❌ No PDF data available to print')
     return
   }
 
   try {
     // Convert data URL to Blob
-    const base64Data = invoiceStore.invoicePDFDataURL.split(',')[1]
+    const base64Data = inventoryStore.invoicePDFDataURL.split(',')[1]
     const byteCharacters = atob(base64Data)
     const byteNumbers = new Array(byteCharacters.length)
     
@@ -89,7 +89,7 @@ const printInvoice = () => {
 const handleOpenChange = (val: boolean) => {
   if (!val) {
     console.log('🚪 Closing invoice preview')
-    invoiceStore.clearInvoice()
+    inventoryStore.clearInvoice()
   }
 }
 
@@ -97,7 +97,7 @@ const handleOpenChange = (val: boolean) => {
 watch(show, (newVal) => {
   console.log('🔄 InvoicePreview visibility:', newVal)
   if (newVal) {
-    console.log('📄 PDF Data URL exists:', !!invoiceStore.invoicePDFDataURL)
+    console.log('📄 PDF Data URL exists:', !!inventoryStore.invoicePDFDataURL)
   }
 })
 </script>
@@ -119,9 +119,9 @@ watch(show, (newVal) => {
      
       <div class="flex-1 overflow-hidden bg-gray-50 rounded-lg">
         <iframe
-          v-if="invoiceStore.invoicePDFDataURL"
+          v-if="inventoryStore.invoicePDFDataURL"
           id="invoice-preview-frame"
-          :src="invoiceStore.invoicePDFDataURL"
+          :src="inventoryStore.invoicePDFDataURL"
           class="w-full h-full border-0"
           @load="console.log('✅ Invoice PDF loaded in preview')"
         ></iframe>
@@ -133,7 +133,7 @@ watch(show, (newVal) => {
       <DialogFooter class="flex justify-between mt-4 gap-3">
         <Button
           variant="secondary"
-          @click="invoiceStore.clearInvoice"
+          @click="inventoryStore.clearInvoice"
           class="flex-1"
         >
           Close
@@ -141,7 +141,7 @@ watch(show, (newVal) => {
         <Button
           class="bg-blue-600 hover:bg-blue-700 text-white flex-1"
           @click="printInvoice"
-          :disabled="!invoiceStore.invoicePDFDataURL"
+          :disabled="!inventoryStore.invoicePDFDataURL"
         >
           🖨️ Print Invoice
         </Button>

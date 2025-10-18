@@ -1094,40 +1094,8 @@ import { defineStore } from 'pinia'
 import { jsPDF } from 'jspdf'
 import logo from '@/assets/images/logo.png'
 import robotoFont from '@/assets/fonts/Roboto.ttf'
-
-export interface InventoryItem {
-  id: string
-  product_id: string
-  product_name?: string
-  name?: string
-  product?: { name: string }
-  quantity: number
-  unit_price: number
-  price?: number
-  total: number
-}
-
-export interface Inventory {
-  id: string
-  invoice_number: string
-  type: string
-  user?: { name: string }
-  payment_method: string
-  status: string
-  subtotal: number
-  discount: number
-  tax: number
-  total: number
-  items?: InventoryItem[]
-  inventory_items?: InventoryItem[]
-  created_at?: string
-}
-
-interface InvoiceState {
-  invoicePDFDataURL: string | null
-  isGenerating: boolean
-  showPreview: boolean
-}
+import robotoBoldFont from '@/assets/fonts/Roboto-Bold.ttf' // ⭐ Imported Bold Font
+import { Inventory, InvoiceState } from '@/types' 
 
 export const useInvoice = defineStore('invoice', {
   state: (): InvoiceState => ({
@@ -1143,60 +1111,80 @@ export const useInvoice = defineStore('invoice', {
       customerName?: string
     ) {
       this.isGenerating = true
-      
+
       // Define constants for layout
       const pageWidth = 80
       const margin = 4
       const contentWidth = pageWidth - 2 * margin
-      const colItemWidth = 28 
-      const rowHeight = 4.5 
-      const MIN_ITEM_HEIGHT = 2 * rowHeight // Enforce minimum two lines per item
-      const logoHeight = 16
       
-      // Column positions (relative to page start)
+      // Column definitions
+      const colItemWidth = 26
+      const rowHeight = 4.5 
+      const logoHeight = 16
+
+      // Table Column Positions
       const colNo = margin + 1
-      const colItem = margin + 5
-      const colQty = margin + 35 
-      const colPrice = margin + 50
-      const colTotal = margin + 67
-      const totalsLabelX = margin + 45
-      const totalsValueX = colTotal
+      const colItem = margin + 7 
+      const colQty = margin + 40 
+      const colPrice = margin + 49 
+      const colTotal = margin + 60 
+      
+      const totalsLabelX = margin + 45 
+      const contentRightEdge = pageWidth - margin; 
+
+      // Invoice Info Alignment (Adjusted in previous steps)
+      const detailValueOffset = 25 
+      const detailTitleX = margin + 1 
 
       const items = inventory.items || inventory.inventory_items || []
       let font: string = ''
+      let boldFont: string = '' // ⭐ Holds the content of the bold font file
       let logoImg: string = ''
+      
+      let totalValueStart: number = 0 
+      const nairaSpacing = 0.5 
 
-      // Helper functions
-      const formatCurrency = (amount: number): string => {
-        return new Intl.NumberFormat('en-NG', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        }).format(amount)
+      // --- HELPER FUNCTIONS (UNCHANGED) ---
+      const formatCurrency = (amount: number, useDecimals: boolean = true): string => {
+        const options: Intl.NumberFormatOptions = {
+          minimumFractionDigits: useDecimals ? 2 : 0,
+          maximumFractionDigits: useDecimals ? 2 : 0,
+          useGrouping: true,
+        }
+        return new Intl.NumberFormat('en-NG', options).format(amount)
       }
+
       const formatDateTime = (dateString?: string): string => {
         const date = dateString ? new Date(dateString) : new Date()
-        const dateOptions: Intl.DateTimeFormatOptions = { day: '2-digit', month: '2-digit', year: 'numeric' }
-        const timeOptions: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit', hour12: true }
+        const dateOptions: Intl.DateTimeFormatOptions = {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        }
+        const timeOptions: Intl.DateTimeFormatOptions = {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        }
         const formattedDate = date.toLocaleDateString('en-GB', dateOptions)
         const formattedTime = date.toLocaleTimeString('en-US', timeOptions)
         return `${formattedDate} ${formattedTime}`
       }
-      const capitalizeFirstLetter = (str?: string): string => {
-        if (!str) return 'N/A'
-        return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
-      }
-      const getProductName = (item: any): string => {
-        return item.product_name || item.name || item.product?.name || 'Unknown Product'
-      }
-      const getUnitPrice = (item: any): number => {
-        return item.unit_price || item.price || 0
-      }
-      const getItemTotal = (item: any): number => {
-        return item.total !== undefined && item.total !== null && item.total > 0
+
+      const capitalizeFirstLetter = (str?: string): string =>
+        str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : 'N/A'
+
+      const getProductName = (item: any): string =>
+        item.product_name || item.name || item.product?.name || 'Unknown Product'
+
+      const getUnitPrice = (item: any): number =>
+        item.unit_price || item.price || 0
+
+      const getItemTotal = (item: any): number =>
+        item.total && item.total > 0
           ? item.total
           : (item.quantity || 0) * getUnitPrice(item)
-      }
-      
+
       const truncateText = (text: string, maxWidth: number, fontSize: number): string => {
         const tempDoc = new jsPDF()
         tempDoc.setFontSize(fontSize)
@@ -1208,65 +1196,83 @@ export const useInvoice = defineStore('invoice', {
         }
         return truncated + '...'
       }
-
+      // --- END HELPER FUNCTIONS ---
 
       try {
-        // --- 1. Load Assets & Register Font for Measurement ---
-
+        // --- 1. Load Assets & Register Font Data ---
+        
+        // Load REGULAR font data
         const robotoFontResponse = await fetch(robotoFont)
         const robotoFontBuffer = await robotoFontResponse.arrayBuffer()
         font = new Uint8Array(robotoFontBuffer).reduce(
-          (data, byte) => data + String.fromCharCode(byte), 
+          (data, byte) => data + String.fromCharCode(byte),
           ''
         )
+
+        // ⭐ NEW: Load BOLD font data
+        const robotoBoldFontResponse = await fetch(robotoBoldFont)
+        const robotoBoldFontBuffer = await robotoBoldFontResponse.arrayBuffer()
+        boldFont = new Uint8Array(robotoBoldFontBuffer).reduce(
+            (data, byte) => data + String.fromCharCode(byte),
+            ''
+        )
+
         logoImg = await this.getImageAsBase64(logo)
 
         // --- 2. Calculate Actual Total Height (for DYNAMIC page sizing) ---
-
-        const baseContentHeight = 55 
-        const headerHeight = 3.5 
+        const baseContentHeight = 55
+        const headerHeight = 3.5
         const discountHeight = (inventory.discount ?? 0) > 0 ? 3.5 : 0
-        const totalFooterHeight = 3.5 + 3.5 + 5 + 8 
-        
-        let calculatedItemHeight = 0 
-        const tempDoc = new jsPDF() 
+        const totalFooterHeight = 3.5 + 3.5 + 5 + 8
+
+        let calculatedItemHeight = 0
+        const tempDoc = new jsPDF()
+        
+        // Register fonts on tempDoc for accurate measurement
         tempDoc.addFileToVFS('Roboto.ttf', font)
         tempDoc.addFont('Roboto.ttf', 'Roboto', 'normal')
+        // ⭐ NEW: Register Bold Font on tempDoc
+        tempDoc.addFileToVFS('Roboto-Bold.ttf', boldFont)
+        tempDoc.addFont('Roboto-Bold.ttf', 'Roboto', 'bold')
+        
         tempDoc.setFont('Roboto', 'normal')
         tempDoc.setFontSize(6.5)
 
         for (const item of items) {
           const productName = getProductName(item)
-          const lines = tempDoc.splitTextToSize(productName, colItemWidth)
-          // 💡 CRITICAL CHANGE 1: Use MAX(actual lines, 2) to calculate height
-          const actualLineCount = lines.length
-          const requiredLines = Math.max(actualLineCount, 2)
-          calculatedItemHeight += requiredLines * rowHeight 
+          const lines = tempDoc.splitTextToSize(productName, colItemWidth) 
+          calculatedItemHeight += lines.length * rowHeight
         }
 
-        const finalCuttingBuffer = 10 
-        const totalHeight = baseContentHeight + headerHeight + calculatedItemHeight + discountHeight + totalFooterHeight + finalCuttingBuffer 
+        const EXTRA_BLANK_SPACE = 20
+        const totalHeight =
+          baseContentHeight +
+          headerHeight +
+          calculatedItemHeight +
+          discountHeight +
+          totalFooterHeight +
+          EXTRA_BLANK_SPACE
 
         // --- 3. Create Final PDF Document ---
-
         const doc = new jsPDF({
           orientation: 'portrait',
           unit: 'mm',
-          format: [pageWidth, totalHeight], 
+          format: [pageWidth, totalHeight],
         })
-        
+
         // Register Fonts on final document
         doc.addFileToVFS('Roboto.ttf', font)
+        doc.addFileToVFS('Roboto-Bold.ttf', boldFont) // ⭐ Add bold font file to VFS
+        
         doc.addFont('Roboto.ttf', 'Roboto', 'normal')
-        doc.addFont('Roboto.ttf', 'Roboto', 'bold')
+        doc.addFont('Roboto-Bold.ttf', 'Roboto', 'bold') // ⭐ Register the bold font data for 'bold' style
         doc.addFont('Roboto.ttf', 'Roboto', 'italic')
-        doc.setFont('Roboto', 'normal') 
-
+        doc.setFont('Roboto', 'normal')
 
         // --- 4. Start Drawing Content ---
         let y = 6
 
-        // ===== LOGO & HEADER (using Roboto) =====
+        // Header and Business Info
         const logoX = (pageWidth - logoHeight) / 2
         doc.addImage(logoImg, 'PNG', logoX, y, logoHeight, logoHeight)
         y += logoHeight + 3
@@ -1289,167 +1295,157 @@ export const useInvoice = defineStore('invoice', {
         doc.line(margin, y, pageWidth - margin, y)
         y += 3
 
-        // ===== INVOICE DETAILS (using Roboto) =====
+        // --- INVOICE INFO SECTION (Indented titles, wider gap for values) ---
         const details = [
           { label: 'Invoice No:', value: inventory.invoice_number ?? 'N/A' },
           { label: 'Date:', value: formatDateTime(inventory.created_at) },
           { label: 'Served By:', value: servedBy ?? inventory.user?.name ?? 'N/A' },
           { label: 'Customer:', value: customerName ?? 'Walk-in' },
-          { label: 'Payment Method:', value: capitalizeFirstLetter(inventory.payment_method) }, 
+          { label: 'Payment Method:', value: capitalizeFirstLetter(inventory.payment_method) },
         ]
 
         doc.setFontSize(7)
         details.forEach((detail) => {
           doc.setFont('Roboto', 'bold')
-          doc.text(detail.label, margin, y)
+          doc.text(detail.label, detailTitleX, y)
           doc.setFont('Roboto', 'normal')
-          const valueText = truncateText(detail.value, contentWidth - 20, 7)
-          doc.text(valueText, margin + 20, y)
+          const valueText = truncateText(detail.value, contentWidth - detailValueOffset - 5, 7)
+          doc.text(valueText, margin + detailValueOffset, y)
           y += 3.5
         })
+        // --- END INVOICE INFO SECTION ---
 
         y += 1
         doc.line(margin, y, pageWidth - margin, y)
         y += 3
 
-        // ===== TABLE HEADER (using Roboto) =====
+        // ===== TABLE HEADER =====
         doc.setFontSize(6.5)
         doc.setFont('Roboto', 'bold')
         doc.setFillColor(245, 245, 245)
         doc.rect(margin, y - 2, contentWidth, 3.5, 'F')
 
-        doc.text('#', colNo, y)
+        doc.text('S/N', colNo, y) 
         doc.text('ITEM', colItem, y)
         doc.text('QTY', colQty, y, { align: 'center' })
-        doc.text('PRICE', colPrice, y, { align: 'right' }) 
-        doc.text('TOTAL', colTotal, y, { align: 'right' }) 
+        doc.text('PRICE', colPrice, y, { align: 'left' })
+        doc.text('TOTAL', colTotal, y, { align: 'left' })
         y += 3.5
 
-        // ===== ITEMS (using Roboto & Wrapping) =====
+        // ===== ITEMS =====
         doc.setFontSize(6.5)
-        
         if (items.length === 0) {
           doc.setFont('Roboto', 'normal')
           doc.setTextColor(120)
           doc.text('No items available', pageWidth / 2, y, { align: 'center' })
           doc.setTextColor(0)
-          y += MIN_ITEM_HEIGHT
+          y += rowHeight * 2
         } else {
           for (let i = 0; i < items.length; i++) {
             const item = items[i]
             const rowY = y
-            
             const productName = getProductName(item)
             
-            doc.setFont('Roboto', 'normal')
-            const lines = doc.splitTextToSize(productName, colItemWidth)
-            const actualLineCount = lines.length
-            
-            // 💡 CRITICAL CHANGE 2: Use MIN_ITEM_HEIGHT for spacing
-            const requiredHeight = Math.max(actualLineCount * rowHeight, MIN_ITEM_HEIGHT) 
-
+            const tempLines = tempDoc.splitTextToSize(productName, colItemWidth)
+            const requiredHeight = tempLines.length * rowHeight 
+            
             if (i % 2 === 0) {
               doc.setFillColor(252, 252, 252)
-              // Rect covers the required minimum height
-              doc.rect(margin, rowY - 2, contentWidth, requiredHeight + 0.5, 'F')
+              doc.rect(margin, rowY - 2, contentWidth, requiredHeight, 'F')
             }
-            
-            // Draw fixed columns at the top line
+
             doc.setFont('Roboto', 'normal')
-            doc.text(String(i + 1), colNo, rowY)
+            doc.text(String(i + 1), colNo, rowY) 
             doc.text(String(item.quantity ?? 0), colQty, rowY, { align: 'center' })
             
             const unitPrice = getUnitPrice(item)
-            doc.text(formatCurrency(unitPrice), colPrice, rowY, { align: 'right' }) 
+            doc.text(formatCurrency(unitPrice, false), colPrice, rowY, { align: 'left' })
             
             doc.setFont('Roboto', 'bold')
             const itemTotal = getItemTotal(item)
-            doc.text(formatCurrency(itemTotal), colTotal, rowY, { align: 'right' }) 
-            
-            // Draw wrapped ITEM text
+            doc.text(`₦ ${formatCurrency(itemTotal, false)}`, colTotal, rowY, { align: 'left' })
+
             doc.setFont('Roboto', 'normal')
-            doc.text(lines, colItem, rowY)
-            
-            y += requiredHeight // Move Y down by the required height (min 2 lines)
+            const lines = doc.splitTextToSize(productName, colItemWidth) 
+            let lineY = rowY
+            for (const line of lines) {
+              doc.text(line, colItem, lineY)
+              lineY += rowHeight
+            }
+
+            y = rowY + requiredHeight
           }
         }
 
+        // ===== TOTALS & FOOTER =====
         doc.line(margin, y - 1, pageWidth - margin, y - 1)
+        y += 3.5
         
-        y += 3.5 
+        // --- CALCULATION FOR ALIGNMENT ---
+        doc.setFontSize(8)
+        doc.setFont('Roboto', 'bold')
+        const finalAmountText = formatCurrency(inventory.total ?? 0, true) 
+        
+        const nairaSymbolWidth = doc.getTextWidth('₦')
+        const finalAmountWidth = doc.getTextWidth(finalAmountText)
+        
+        totalValueStart = contentRightEdge - finalAmountWidth - nairaSymbolWidth - nairaSpacing
+        // ---------------------------------
 
-        // ===== TOTALS (Right-Justified Amount with Side-by-Side Currency) =====
-        const nairaSpaceOffset = 1.0 
-        
         doc.setFontSize(7)
         doc.setFont('Roboto', 'normal')
-        
+
         // Subtotal
         doc.text('Subtotal:', totalsLabelX, y, { align: 'right' })
-        let totalAmountX = totalsValueX - doc.getTextWidth(formatCurrency(inventory.subtotal ?? 0)) - nairaSpaceOffset
-        doc.text(`₦ ${formatCurrency(inventory.subtotal ?? 0)}`, totalAmountX, y) 
+        const subtotalText = `₦ ${formatCurrency(inventory.subtotal ?? 0, true)}`
+        doc.text(subtotalText, totalValueStart, y, { align: 'left' })
         y += 3.5
 
         // Discount
         if ((inventory.discount ?? 0) > 0) {
           doc.setTextColor(220, 0, 0)
           doc.text('Discount:', totalsLabelX, y, { align: 'right' })
-          totalAmountX = totalsValueX - doc.getTextWidth(formatCurrency(inventory.discount ?? 0)) - nairaSpaceOffset
-          doc.text(`-₦ ${formatCurrency(inventory.discount ?? 0)}`, totalAmountX, y) 
+          const discountText = `-₦ ${formatCurrency(inventory.discount ?? 0, true)}`
+          doc.text(discountText, totalValueStart, y, { align: 'left' })
           doc.setTextColor(0, 0, 0)
           y += 3.5
         }
 
         // Tax
         doc.text('Tax:', totalsLabelX, y, { align: 'right' })
-        totalAmountX = totalsValueX - doc.getTextWidth(formatCurrency(inventory.tax ?? 0)) - nairaSpaceOffset
-        doc.text(`₦ ${formatCurrency(inventory.tax ?? 0)}`, totalAmountX, y) 
+        const taxText = `₦ ${formatCurrency(inventory.tax ?? 0, true)}`
+        doc.text(taxText, totalValueStart, y, { align: 'left' })
         y += 3.5
 
         // Grand Total Box
         doc.setFillColor(245, 245, 245)
         doc.rect(margin, y - 2.5, contentWidth, 5, 'F')
         doc.setFontSize(8)
-
-        // Grand Total Label
         doc.setFont('Roboto', 'bold')
         doc.text('TOTAL:', totalsLabelX, y + 0.5, { align: 'right' })
 
-        // Grand Total Amount (Side-by-Side placement)
-        const amountText = formatCurrency(inventory.total ?? 0)
-        
-        const nairaSymbolX = totalsValueX - doc.getTextWidth(amountText) - 2.5 
-        
+        // Grand Total Amount
         doc.setFont('Roboto', 'normal')
-        doc.text('₦', nairaSymbolX, y + 0.5)
-
+        doc.text('₦', totalValueStart, y + 0.5, { align: 'left' }) 
+        
         doc.setFont('Roboto', 'bold')
-        doc.text(amountText, totalsValueX, y + 0.5, { align: 'right' }) 
+        doc.text(finalAmountText, totalValueStart + nairaSymbolWidth + nairaSpacing, y + 0.5, { align: 'left' }) 
 
         y += 5
-
-        // ===== FOOTER (Center-Justified) =====
-        
         doc.line(margin, y + 1, pageWidth - margin, y + 1)
-        y += 4.5 
-
+        y += 4.5
         doc.setFontSize(7)
         doc.setFont('Roboto', 'italic')
-        doc.text('Thank you for coming!', pageWidth / 2, y, { align: 'center' }) 
-        
-        // 🚀 Final Y-positioning fix (ensures the next line is visible)
-        y += 4.0 
-        
+        doc.text('Thank you for coming!', pageWidth / 2, y, { align: 'center' })
+        y += 4.0
         doc.setFontSize(6.5)
         doc.setFont('Roboto', 'normal')
-        doc.text('www.pharmacy.com', pageWidth / 2, y, { align: 'center' }) 
-        
-        y += 3 
+        doc.text('www.pharmacy.com', pageWidth / 2, y, { align: 'center' })
 
         // Output
         this.invoicePDFDataURL = doc.output('dataurlstring')
         this.showPreview = true
-        
+
         console.log('✅ Invoice PDF generated successfully')
       } catch (err) {
         console.error('❌ Failed generating invoice PDF:', err)

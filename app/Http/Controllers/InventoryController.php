@@ -2,19 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Role;
 use App\Models\User;
 use Inertia\Inertia;
-use Pest\Support\Str;
 use App\Models\Invoice;
 use App\Models\Product;
+use App\Models\Customer;
 use App\Models\Inventory;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use App\Http\Requests\StoreInventoryRequest;
 use App\Http\Requests\UpdateInventoryRequest;
-use App\Models\Customer;
-use App\Models\Role;
 
 class InventoryController extends Controller
 {
@@ -38,6 +38,7 @@ class InventoryController extends Controller
             ->paginate(15)
             ->withQueryString()
             ->through(fn($inventory) => [
+                'id' => $inventory->id,
                 'invoice_number' => $inventory->invoice_number,
                 'user' => [
                     'id' => $inventory->user?->id,
@@ -127,7 +128,10 @@ class InventoryController extends Controller
      */
     public function show(Inventory $inventory)
     {
-        $inventory->load(['user', 'items.product']);
+        $inventory->load(['user', 'items.product', 'customer']);
+
+        // Optional: Ensure 'items' always has a default array
+        $inventory->items = $inventory->items ?? [];
 
         return response()->json([
             'status'    => true,

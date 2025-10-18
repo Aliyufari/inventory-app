@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from "vue"
-import { Head, usePage, useForm } from "@inertiajs/vue3"
+import { Head, usePage } from "@inertiajs/vue3"
 import AppLayout from "@/layouts/AppLayout.vue"
 import InventoryLayout from "@/layouts/inventory/Layout.vue"
 import { type BreadcrumbItem, type SharedData, type User } from "@/types"
@@ -10,7 +10,7 @@ import AddInventory from "@/pages/inventory/AddInventory.vue"
 import EditInventory from "@/pages/inventory/EditInventory.vue"
 import ViewInventory from "@/pages/inventory/ViewInventory.vue"
 import DeleteInventory from "@/pages/inventory/DeleteInventory.vue"
-import InvoicePreview from "@/pages/inventory/InvoivePreview.vue" // ✅ Import here
+import InvoicePreview from "@/pages/inventory/InvoivePreview.vue"
 import { Button } from "@/components/ui/button"
 import { useInventory } from "@/stores/inventory"
 import { Plus } from "lucide-vue-next"
@@ -21,18 +21,22 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: "Inventory", href: "/inventory" 
 
 const page = usePage<SharedData>()
 const authUser = page.props.auth.user as User
-const form = useForm({ name: authUser.name, email: authUser.email })
-
 const inventoryStore = useInventory()
 
-onMounted(() => {
+// Initialize shared data when component mounts
+onMounted(async () => {
   if (!inventoryStore.inventories?.length) {
     inventoryStore.fetchInventories()
+  }
+  
+  // Initialize options once for the entire app
+  if (!inventoryStore.optionsInitialized) {
+    await inventoryStore.initializeOptions()
   }
 })
 
 const handleSearch = () => {
-  inventoryStore.fetchInventories(1) 
+  inventoryStore.fetchInventories(1)
 }
 </script>
 
@@ -63,7 +67,7 @@ const handleSearch = () => {
             v-if="inventoryStore.pagination"
             :links="inventoryStore.pagination.links"
             :meta="inventoryStore.pagination.meta"
-            :onPageChange="page => inventoryStore.fetchInventories(page)"
+            :onPageChange="(pageNum) => inventoryStore.fetchInventories(pageNum)"
           />
         </ComponentCard>
       </div>
@@ -72,20 +76,6 @@ const handleSearch = () => {
       <AddInventory
         v-if="inventoryStore.modalType === 'add'"
         @saved="inventoryStore.fetchInventories()"
-      />
-      <EditInventory
-        v-if="inventoryStore.modalType === 'edit'"
-        :inventory="inventoryStore.selected"
-        @updated="inventoryStore.fetchInventories()"
-      />
-      <ViewInventory
-        v-if="inventoryStore.modalType === 'view'"
-        :inventory="inventoryStore.selected"
-      />
-      <DeleteInventory
-        v-if="inventoryStore.modalType === 'delete'"
-        :inventory="inventoryStore.selected"
-        @deleted="inventoryStore.fetchInventories()"
       />
 
       <InvoicePreview />
