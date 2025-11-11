@@ -1,9 +1,7 @@
-<script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+<script setup>
+import { ref, watch, computed, onMounted } from 'vue'
 import axios from 'axios'
 import { useProduct } from '@/stores/products'
-
-// Components
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -12,69 +10,76 @@ import MultiSelect from '@/components/ui/multiselect/MultiSelect.vue'
 import Select from '@/components/ui/select/Select.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 
-// Pinia store
 const productStore = useProduct()
 
-// Props
-const props = defineProps<{ product: any }>()
+const props = defineProps({
+  product: Object
+})
 
-// Form state (readonly)
 const form = ref({
   name: '',
-  category_ids: [] as string[],
+  category_ids: [],
   buying_price: '',
   retail_price: '',
   wholesale_price: '',
   brand: '',
   quantity: '',
   store_id: '',
-  description: ''
+  description: '',
+  units_per_packet: 0,
+  packets_per_carton: 0
 })
 
-// Options
-const categories = ref<{ label: string; value: string }[]>([])
-const stores = ref<{ label: string; value: string }[]>([])
+const categories = ref([])
+const stores = ref([])
 
-// Fetch categories and stores
 onMounted(async () => {
   try {
     const [categoriesRes, storesRes] = await Promise.all([
       axios.get(route('categories.api')),
       axios.get(route('stores.api'))
     ])
-
-    categories.value = categoriesRes.data.categories.map((c: any) => ({
+    categories.value = categoriesRes.data.categories.map(c => ({
       label: c.name.charAt(0).toUpperCase() + c.name.slice(1),
-      value: c.id,
+      value: c.id
     }))
-
-    stores.value = storesRes.data.stores.map((s: any) => ({
+    stores.value = storesRes.data.stores.map(s => ({
       label: s.name.charAt(0).toUpperCase() + s.name.slice(1),
-      value: s.id,
+      value: s.id
     }))
-  } catch (error) {
-    console.error('Error fetching categories/stores:', error)
+  } catch (err) {
+    console.error('Error fetching categories/stores:', err)
   }
 })
 
-// Prefill data when product changes
+// 🔥 Force reactivity even when fields are disabled
 watch(
   () => props.product,
   (p) => {
-    if (p) {
-      form.value.name = p.name ?? ''
-      form.value.category_ids = (p.categories ?? []).map((c: any) => String(c.id))
-      form.value.buying_price = p.buying_price ?? ''
-      form.value.retail_price = p.retail_price ?? ''
-      form.value.wholesale_price = p.wholesale_price ?? ''
-      form.value.brand = p.brand ?? ''
-      form.value.quantity = p.quantity ?? ''
-      form.value.store_id = p.store?.id ? String(p.store.id) : ''
-      form.value.description = p.description ?? ''
+    if (!p) return
+    form.value = {
+      name: p.name ?? '',
+      category_ids: (p.categories ?? []).map(c => String(c.id)),
+      buying_price: p.buying_price ?? '',
+      retail_price: p.retail_price ?? '',
+      wholesale_price: p.wholesale_price ?? '',
+      brand: p.brand ?? '',
+      quantity: p.quantity ?? '',
+      store_id: p.store?.id ? String(p.store.id) : '',
+      description: p.description ?? '',
+      units_per_packet: Number(p.units_per_packet) || 0,
+      packets_per_carton: Number(p.packets_per_carton) || 0
     }
   },
-  { immediate: true }
+  { immediate: true, deep: true }
 )
+
+// ✅ Correct computed property (always reactive)
+const computedTotalUnits = computed(() => {
+  const units = Number(form.value.units_per_packet) || 0
+  const packets = Number(form.value.packets_per_carton) || 0
+  return units * packets
+})
 </script>
 
 <template>
@@ -83,106 +88,100 @@ watch(
     @update:open="val => { if (!val) productStore.closeModal() }"
   >
     <DialogContent
-      class="
-        w-full 
-        sm:max-w-5xl 
-        max-w-[calc(100%-1rem)] 
-        rounded-none sm:rounded-2xl 
-        h-[100vh] sm:h-auto 
-        overflow-y-auto 
-        p-4 sm:p-6
-      "
+      class="w-full sm:max-w-6xl max-w-[calc(100%-1rem)] rounded-none sm:rounded-2xl h-auto max-h-[99vh] flex flex-col overflow-hidden p-0"
     >
-      <div class="space-y-6">
-        <DialogHeader class="space-y-3 text-center sm:text-left">
-          <DialogTitle class="text-lg sm:text-xl font-semibold">
-            View Product
-          </DialogTitle>
-        </DialogHeader>
+      <DialogHeader
+        class="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 p-4 sm:p-6 bg-white dark:bg-gray-800"
+      >
+        <DialogTitle class="text-lg sm:text-2xl font-semibold">
+          View Product
+        </DialogTitle>
+      </DialogHeader>
 
-        <!-- Name -->
-        <div class="grid gap-2">
-          <Label for="name">Name</Label>
-          <Input id="name" type="text" v-model="form.name" disabled />
-        </div>
-
-        <!-- Brand -->
-        <div class="grid gap-2">
-          <Label for="brand">Brand</Label>
-          <Input id="brand" type="text" v-model="form.brand" disabled />
-        </div>
-
-        <!-- Categories & Store & Quantity -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div class="grid gap-2">
-            <Label for="category_ids">Categories</Label>
-            <MultiSelect
-              id="category_ids"
-              v-model="form.category_ids"
-              :options="categories"
-              disabled
-            />
+      <!-- Scrollable body -->
+      <div class="flex-1 overflow-y-auto p-4 sm:p-8 space-y-6 bg-gray-50 dark:bg-gray-900">
+        
+        <!-- BASIC INFO -->
+        <div class="shadow-sm rounded-2xl p-4 sm:p-6 bg-white dark:bg-gray-800 space-y-4">
+          <h3 class="font-semibold text-base text-gray-700 dark:text-gray-200">Basic Information</h3>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <Label>Product Name</Label>
+              <Input v-model="form.name" disabled />
+            </div>
+            <div>
+              <Label>Brand</Label>
+              <Input v-model="form.brand" disabled />
+            </div>
           </div>
-          <div class="grid gap-2">
-            <Label for="store_id">Store</Label>
-            <Select
-              id="store_id"
-              v-model="form.store_id"
-              :options="stores"
-              disabled
-            />
-          </div>
-          <div class="grid gap-2">
-            <Label for="quantity">Quantity</Label>
-            <Input 
-              id="quantity" 
-              type="number" 
-              v-model="form.quantity"
-              disabled 
-            />
+
+          <div class="grid sm:grid-cols-3 gap-4">
+            <div>
+              <Label>Categories</Label>
+              <MultiSelect v-model="form.category_ids" :options="categories" disabled />
+            </div>
+            <div>
+              <Label>Quantity</Label>
+              <Input v-model="form.quantity" type="number" disabled />
+            </div>
+            <div>
+              <Label>Store</Label>
+              <Select v-model="form.store_id" :options="stores" disabled />
+            </div>
           </div>
         </div>
 
-        <!-- Prices -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div class="grid gap-2">
-            <Label for="buying_price">Buying Price</Label>
-            <Input id="buying_price" type="number" v-model="form.buying_price" disabled />
-          </div>
-          <div class="grid gap-2">
-            <Label for="wholesale_price">Wholesale Price</Label>
-            <Input id="wholesale_price" type="number" v-model="form.wholesale_price" disabled />
-          </div>
-          <div class="grid gap-2">
-            <Label for="retail_price">Retail Price</Label>
-            <Input id="retail_price" type="number" v-model="form.retail_price" disabled />
+        <!-- INVENTORY -->
+        <div class="shadow-sm rounded-2xl p-4 sm:p-6 bg-white dark:bg-gray-800 space-y-4">
+          <h3 class="font-semibold text-base text-gray-700 dark:text-gray-200">Inventory Details</h3>
+          <div class="grid sm:grid-cols-3 gap-4">
+            <div>
+              <Label>Units per Packet</Label>
+              <Input v-model="form.units_per_packet" type="number" disabled />
+            </div>
+            <div>
+              <Label>Packets per Carton</Label>
+              <Input v-model="form.packets_per_carton" type="number" disabled />
+            </div>
+            <div>
+              <Label>Total Units (calculated)</Label>
+              <!-- ✅ Use readonly instead of disabled so value updates -->
+              <Input :value="computedTotalUnits" readonly class="bg-gray-100 dark:bg-gray-700" />
+            </div>
           </div>
         </div>
 
-        <!-- Description -->
-        <div class="grid gap-2">
-          <Label for="description">Description</Label>
-          <Textarea
-            id="description"
-            v-model="form.description"
-            class="resize-none"
-            rows="3"
-            disabled
-          />
+        <!-- PRICING -->
+        <div class="shadow-sm rounded-2xl p-4 sm:p-6 bg-white dark:bg-gray-800 space-y-4">
+          <h3 class="font-semibold text-base text-gray-700 dark:text-gray-200">Pricing Details</h3>
+          <div class="grid sm:grid-cols-3 gap-4">
+            <div>
+              <Label>Buying Price</Label>
+              <Input v-model="form.buying_price" type="number" disabled />
+            </div>
+            <div>
+              <Label>Wholesale Price</Label>
+              <Input v-model="form.wholesale_price" type="number" disabled />
+            </div>
+            <div>
+              <Label>Retail Price</Label>
+              <Input v-model="form.retail_price" type="number" disabled />
+            </div>
+          </div>
         </div>
 
-        <!-- Footer -->
-        <DialogFooter class="flex flex-col sm:flex-row gap-2 sm:justify-end">
-          <Button 
-            type="button" 
-            variant="secondary" 
-            class="w-full sm:w-auto" 
-            @click="productStore.closeModal()"
-          >
-            Close
-          </Button>
-        </DialogFooter>
+        <!-- DESCRIPTION -->
+        <div class="shadow-sm rounded-2xl p-4 sm:p-6 bg-white dark:bg-gray-800 space-y-4">
+          <h3 class="font-semibold text-base text-gray-700 dark:text-gray-200">Description</h3>
+          <Textarea v-model="form.description" rows="3" disabled />
+        </div>
       </div>
+
+      <DialogFooter
+        class="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 p-4 sm:p-6 flex flex-col sm:flex-row gap-2 sm:justify-end bg-white dark:bg-gray-900"
+      >
+        <Button variant="secondary" class="w-full sm:w-auto" @click="productStore.closeModal()">Close</Button>
+      </DialogFooter>
     </DialogContent>
   </Dialog>
 </template>

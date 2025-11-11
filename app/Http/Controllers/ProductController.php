@@ -35,6 +35,8 @@ class ProductController extends Controller
                 'quantity' => $product->quantity,
                 'brand' => $product->brand,
                 'description' => $product->description,
+                'units_per_packet' => $product->units_per_packet,
+                'packets_per_carton' => $product->packets_per_carton,
                 'store' => $product->store
                     ? [
                         'id' => $product->store->id,

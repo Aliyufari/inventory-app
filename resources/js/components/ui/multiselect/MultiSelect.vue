@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, type HTMLAttributes } from "vue";
 import { onClickOutside } from "@vueuse/core";
-import { cn } from "@/lib/utils";
 
 const props = defineProps<{
   options: { label: string; value: string | number }[];

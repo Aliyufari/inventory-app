@@ -23,16 +23,32 @@ class StoreProductRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255', Rule::unique('categories', 'name')],
-            'buying_price' => ['required', 'numeric'],
-            'retail_price' => ['required', 'numeric'],
-            'wholesale_price' => ['required', 'numeric'],
-            'quantity' => ['required', 'numeric'],
-            'store_id' => ['required', 'string', 'exists:stores,id'],
-            'category_ids' => ['required', 'array'],
-            'category_ids.*' => ['exists:categories,id'],
-            'brand' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', Rule::unique('products', 'name')],
+            'brand' => ['nullable', 'string', 'max:255'],
+            'buying_price' => ['required', 'numeric', 'min:0'],
+            'retail_price' => ['required', 'numeric', 'min:0'],
+            'wholesale_price' => ['required', 'numeric', 'min:0'],
+            'quantity' => ['required', 'integer', 'min:0'],
+
+            // Relationships
+            'store_id' => ['required', 'uuid', 'exists:stores,id'],
+            'category_ids' => ['required', 'array', 'min:1'],
+            'category_ids.*' => ['uuid', 'exists:categories,id'],
+
+            // Unit conversion fields
+            'units_per_packet' => ['nullable', 'integer', 'min:1'],
+            'packets_per_carton' => ['nullable', 'integer', 'min:1'],
+
+            'description' => ['nullable', 'string', 'max:1000'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'name.unique' => 'This product name already exists.',
+            'category_ids.required' => 'Please select at least one category.',
+            'store_id.exists' => 'Selected store not found.',
         ];
     }
 }

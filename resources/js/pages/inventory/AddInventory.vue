@@ -118,7 +118,7 @@ const fetchProductOptions = async (storeId?: string) => {
     const { data } = await axios.get(route("products.index"), { params })
     productOptions.value = (data.products.data || []).map((p: any) => ({
       value: p.id,
-      label: p.name,
+      label: `${p.name} - ${p.brand}`,
       categories: p.categories?.map((c: any) => c.name) ?? [],
       brand: p.brand,
       retail_price: Number(p.retail_price) || 0,
@@ -225,8 +225,6 @@ const submit = async (e: Event) => {
   } else if (finalCustomerValue) {
     payload.customer_name = finalCustomerValue
   }
-
-  console.log("✅ Final Payload:", payload)
 
   form.post(route("inventories.store"), {
     data: payload,

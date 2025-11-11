@@ -65,7 +65,7 @@ class Inventory extends Model
         parent::boot();
 
         static::creating(function ($model) {
-            $model->invoice_number = 'INVOICE' . '-' . str_pad(Inventory::count() + 1, 4, '0', STR_PAD_LEFT);
+            $model->invoice_number = 'INVOICE' . '-' . str_pad(Inventory::count() + 1, 7, '0', STR_PAD_LEFT);
         });
     }
 }

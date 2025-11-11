@@ -241,9 +241,9 @@ export const useInventory = defineStore('inventory', {
 
       const capitalizeFirstLetter = (str?: string): string =>
         str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : 'N/A'
-
+      
       const getProductName = (item: any): string =>
-        item.product_name || item.name || item.product?.name || 'Unknown Product'
+        item.product_name || item.name || `${item.product?.name} - ${item.product?.brand}` || 'Unknown Product'
 
       const getUnitPrice = (item: any): number =>
         item.unit_price || item.price || 0
@@ -334,7 +334,7 @@ export const useInventory = defineStore('inventory', {
 
         doc.setFontSize(11)
         doc.setFont('Roboto', 'bold')
-        doc.text('AL-AMIN MEDICINE STORE', pageWidth / 2, y, { align: 'center' })
+        doc.text('AL-AMIN PHARMACY AND STORE', pageWidth / 2, y, { align: 'center' })
         y += 4
 
         doc.setFontSize(7)
@@ -493,7 +493,7 @@ export const useInventory = defineStore('inventory', {
         y += 4.0
         doc.setFontSize(6.5)
         doc.setFont('Roboto', 'normal')
-        // doc.text('www.pharmacy.com', pageWidth / 2, y, { align: 'center' })
+        doc.text('Powered by: AFGICafe | +2347031545880', pageWidth / 2, y, { align: 'center' })
 
         // Output and State Update
         this.invoicePDFDataURL = doc.output('dataurlstring')
