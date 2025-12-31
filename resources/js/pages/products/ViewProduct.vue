@@ -19,7 +19,7 @@ const props = defineProps({
 const form = ref({
   name: '',
   category_ids: [],
-  buying_price: '',
+  cost: '',
   retail_price: '',
   wholesale_price: '',
   brand: '',
@@ -60,7 +60,7 @@ watch(
     form.value = {
       name: p.name ?? '',
       category_ids: (p.categories ?? []).map(c => String(c.id)),
-      buying_price: p.buying_price ?? '',
+      cost: p.cost ?? '',
       retail_price: p.retail_price ?? '',
       wholesale_price: p.wholesale_price ?? '',
       brand: p.brand ?? '',
@@ -157,7 +157,7 @@ const computedTotalUnits = computed(() => {
           <div class="grid sm:grid-cols-3 gap-4">
             <div>
               <Label>Buying Price</Label>
-              <Input v-model="form.buying_price" type="number" disabled />
+              <Input v-model="form.cost" type="number" disabled />
             </div>
             <div>
               <Label>Wholesale Price</Label>

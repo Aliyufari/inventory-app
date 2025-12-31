@@ -27,7 +27,7 @@ const props = defineProps<{ product: any }>()
 const form = useForm({
   name: '',
   category_ids: [] as string[],
-  buying_price: '',
+  cost: '',
   retail_price: '',
   wholesale_price: '',
   brand: '',
@@ -69,7 +69,7 @@ watch(
     if (p) {
       form.name = p.name ?? ''
       form.category_ids = (p.categories ?? []).map((c: any) => String(c.id))
-      form.buying_price = p.buying_price ?? ''
+      form.cost = p.cost ?? ''
       form.retail_price = p.retail_price ?? ''
       form.wholesale_price = p.wholesale_price ?? ''
       form.brand = p.brand ?? ''
@@ -220,9 +220,9 @@ const updateProduct = (e: Event) => {
             </h3>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div class="grid gap-2">
-                <Label for="buying_price">Buying Price</Label>
-                <Input id="buying_price" type="number" v-model="form.buying_price" placeholder="e.g., 500.00" />
-                <InputError :message="form.errors.buying_price" />
+                <Label for="cost">Buying Price</Label>
+                <Input id="cost" type="number" v-model="form.cost" placeholder="e.g., 500.00" />
+                <InputError :message="form.errors.cost" />
               </div>
               <div class="grid gap-2">
                 <Label for="wholesale_price">Wholesale Price</Label>

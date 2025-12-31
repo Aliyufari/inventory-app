@@ -344,7 +344,7 @@ class InventoryController extends Controller
             }
 
             $subtotal += $item['quantity'] * $item['price'];
-            $totalBuyingCost += $item['quantity'] * $product->buying_price;
+            $totalBuyingCost += $item['quantity'] * $product->cost;
 
             $validatedItems[] = [
                 ...$item,

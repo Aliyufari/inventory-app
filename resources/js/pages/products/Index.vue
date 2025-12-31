@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue"
+import { onMounted } from "vue"
 import { Head, useForm, usePage } from "@inertiajs/vue3"
 import AppLayout from "@/layouts/AppLayout.vue"
 import ProductLayout from "@/layouts/products/Layout.vue"
@@ -12,7 +12,7 @@ import ViewProduct from "@/pages/products/ViewProduct.vue"
 import DeleteProduct from "@/pages/products/DeleteProduct.vue"
 import { Button } from "@/components/ui/button"
 import { useProduct } from "@/stores/products"
-import { BriefcaseMedical } from "lucide-vue-next"
+import { Briefcase } from "lucide-vue-next"
 import Pagination from "@/pages/components/Pagination.vue"
 import SearchInput from "@/pages/components/SeachInput.vue"
 
@@ -49,7 +49,7 @@ const handleSearch = () => {
     <ProductLayout>
       <template #button>
         <Button @click="productStore.openModal('add')">
-          <BriefcaseMedical class="mr-2" />+ Add Product
+          <Briefcase class="mr-2" />+ Add Product
         </Button>
       </template>
 

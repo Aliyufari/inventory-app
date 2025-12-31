@@ -18,7 +18,8 @@ return new class extends Migration
             // Basic product info
             $table->string('name');
             $table->string('brand')->nullable();
-            $table->decimal('buying_price', 10, 2);
+            $table->string('barcode')->nullable()->unique()->index();
+            $table->decimal('cost', 10, 2);
             $table->decimal('retail_price', 10, 2); // price per base unit
             $table->decimal('wholesale_price', 10, 2); // price per base unit
             $table->integer('quantity')->default(0); // always store in base units

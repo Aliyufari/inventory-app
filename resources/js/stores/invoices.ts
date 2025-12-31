@@ -1,9 +1,9 @@
 // BROWSER WINDOW
 // import { defineStore } from 'pinia'
 // import { jsPDF } from 'jspdf'
-// import logo from '@/assets/images/logo.png'
-// import companyStamp from '@/assets/images/logo.png'
-// import signature from '@/assets/images/logo.png'
+// import logo from '@/assets/images/logo.jpg'
+// import companyStamp from '@/assets/images/logo.jpg'
+// import signature from '@/assets/images/logo.jpg'
 
 // export interface InventoryItem {
 //   id: string
@@ -230,9 +230,9 @@
 // COLOR INVOICE
 // import { defineStore } from 'pinia'
 // import { jsPDF } from 'jspdf'
-// import logo from '@/assets/images/logo.png'
-// import companyStamp from '@/assets/images/logo.png'
-// import signature from '@/assets/images/logo.png'
+// import logo from '@/assets/images/logo.jpg'
+// import companyStamp from '@/assets/images/logo.jpg'
+// import signature from '@/assets/images/logo.jpg'
 
 // export interface InventoryItem {
 //   id: string
@@ -518,9 +518,9 @@
 // BLACK and WHITE
 // import { defineStore } from 'pinia'
 // import { jsPDF } from 'jspdf'
-// import logo from '@/assets/images/logo.png'
-// import companyStamp from '@/assets/images/logo.png'
-// import signature from '@/assets/images/logo.png'
+// import logo from '@/assets/images/logo.jpg'
+// import companyStamp from '@/assets/images/logo.jpg'
+// import signature from '@/assets/images/logo.jpg'
 
 // export interface InventoryItem {
 //   id: string
@@ -813,9 +813,9 @@
 // WITH IMAGES DESIGN
 // import { defineStore } from 'pinia'
 // import { jsPDF } from 'jspdf'
-// import logo from '@/assets/images/logo.png'
-// import companyStamp from '@/assets/images/logo.png'
-// import signature from '@/assets/images/logo.png'
+// import logo from '@/assets/images/logo.jpg'
+// import companyStamp from '@/assets/images/logo.jpg'
+// import signature from '@/assets/images/logo.jpg'
 
 // export interface InventoryItem {
 //   id: string
@@ -1092,7 +1092,7 @@
 // OTHER
 import { defineStore } from 'pinia'
 import { jsPDF } from 'jspdf'
-import logo from '@/assets/images/logo.png'
+import logo from '@/assets/images/logo.jpg'
 import robotoFont from '@/assets/fonts/Roboto.ttf'
 import robotoBoldFont from '@/assets/fonts/Roboto-Bold.ttf' // ⭐ Imported Bold Font
 import { Inventory, InvoiceState } from '@/types' 

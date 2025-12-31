@@ -25,7 +25,7 @@ const productStore = useProduct()
 const form = useForm({
   name: '',
   category_ids: [] as string[],
-  buying_price: '',
+  cost: '',
   retail_price: '',
   wholesale_price: '',
   brand: '',
@@ -203,9 +203,9 @@ const addProduct = (e: Event) => {
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div class="grid gap-2">
-                <Label for="buying_price">Cost</Label>
-                <Input id="buying_price" type="number" v-model="form.buying_price" placeholder="e.g., 500.00" />
-                <InputError :message="form.errors.buying_price" />
+                <Label for="cost">Cost</Label>
+                <Input id="cost" type="number" v-model="form.cost" placeholder="e.g., 500.00" />
+                <InputError :message="form.errors.cost" />
               </div>
 
               <div class="grid gap-2">

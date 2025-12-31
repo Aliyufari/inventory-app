@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import axios from 'axios'
 import { jsPDF } from 'jspdf'
 // Assuming these paths are correct in your project structure
-import logo from '@/assets/images/logo.png' 
+import logo from '@/assets/images/logo.jpg' 
 import robotoFont from '@/assets/fonts/Roboto.ttf'
 import robotoBoldFont from '@/assets/fonts/Roboto-Bold.ttf' 
 import { Inventory } from '@/types' 

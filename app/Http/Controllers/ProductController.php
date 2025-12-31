@@ -29,7 +29,7 @@ class ProductController extends Controller
             ->through(fn($product) => [
                 'id' => $product->id,
                 'name' => $product->name,
-                'buying_price' => $product->buying_price,
+                'cost' => $product->cost,
                 'wholesale_price' => $product->wholesale_price,
                 'retail_price' => $product->retail_price,
                 'quantity' => $product->quantity,
@@ -71,7 +71,7 @@ class ProductController extends Controller
         $products = $query->get()->map(fn($product) => [
             'id' => $product->id,
             'name' => $product->name,
-            'buying_price' => $product->buying_price,
+            'cost' => $product->cost,
             'retail_price' => $product->retail_price,
             'wholesale_price' => $product->wholesale_price,
             'quantity' => $product->quantity,

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<!-- <script setup lang="ts">
 import { ref, computed, onMounted, watch } from "vue"
 import { useForm } from "@inertiajs/vue3"
 import axios from "axios"
@@ -519,4 +519,502 @@ const submit = async (e: Event) => {
 ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
 ::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #a0aec0; }
+</style> -->
+
+
+<script setup lang="ts">
+import { ref, computed, watch, onUnmounted, nextTick } from "vue"
+import { useForm } from "@inertiajs/vue3"
+import axios from "axios"
+import { useInventory } from "@/stores/inventory"
+
+// UI Components
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import Textarea from "@/components/ui/textarea/Textarea.vue"
+import SearchableSelect from "@/components/ui/select/SearchableSelect.vue"
+import Select from "@/components/ui/select/Select.vue"
+
+// Barcode scanner
+import Quagga from "quagga"
+
+defineEmits(["saved"])
+const inventoryStore = useInventory()
+
+// --- Dialog state ---
+const localOpen = ref(inventoryStore.modalType === 'add')
+
+// --- Form setup ---
+type ItemRow = {
+  product_id?: string | number
+  quantity: number
+  price: number
+  subtotal: number
+}
+
+const form = useForm({
+  customer: "" as string,
+  customer_type: "retail",
+  store_id: inventoryStore.defaultStoreId,
+  payment_method: "cash",
+  items: [] as ItemRow[],
+  discount: 0,
+  tax: 0,
+  note: "",
+})
+
+// Initialize one empty row
+if (!form.items.length) {
+  form.items.push({ product_id: "", quantity: 1, price: 0, subtotal: 0 })
+}
+
+// --- Products & Customers ---
+const productOptions = ref<any[]>([])
+const loadingProducts = ref(false)
+
+const customerSearchQuery = ref("")
+const filteredCustomerOptions = ref<any[]>([])
+const customerOptions = computed(() => inventoryStore.customerOptions)
+
+// --- Barcode ---
+const barcodeInput = ref("")
+const barcodeRef = ref<HTMLInputElement | null>(null)
+const isCameraOpen = ref(false)
+const SCAN_COOLDOWN = 800
+let lastScannedCode = ""
+let lastScanTime = 0
+
+// --- Helpers ---
+const getProductById = (id: string | number) => productOptions.value.find(p => p.value === id)
+const calculateProductPrice = (productId: string | number, type: string) => {
+  const p = getProductById(productId)
+  if (!p) return 0
+  return Number(type === "wholesale" ? p.wholesale_price : p.retail_price) || 0
+}
+
+const setProductForRow = (row: ItemRow, id?: string | number) => {
+  const pid = id ?? row.product_id
+  if (!pid) return
+  const price = calculateProductPrice(pid, form.customer_type)
+  row.price = price
+  row.quantity = Math.max(1, Number(row.quantity) || 1)
+  row.subtotal = row.price * row.quantity
+  const prod = getProductById(pid)
+  if (!form.store_id && prod?.store_id) form.store_id = String(prod.store_id)
+}
+
+const setQty = (row: ItemRow, qty: number) => {
+  row.quantity = Math.max(1, Number(qty) || 1)
+  row.subtotal = row.price * row.quantity
+}
+
+const addRow = () => form.items.push({ product_id: "", quantity: 1, price: 0, subtotal: 0 })
+const removeRow = (i: number) => form.items.splice(i, 1)
+
+const addOrIncrementProduct = (product: any) => {
+  if (!product) return
+  const existingRow = form.items.find(r => r.product_id === product.value)
+  if (existingRow) {
+    existingRow.quantity += 1
+    existingRow.subtotal = existingRow.quantity * existingRow.price
+    return
+  }
+  const newRow: ItemRow = {
+    product_id: product.value,
+    quantity: 1,
+    price: calculateProductPrice(product.value, form.customer_type),
+    subtotal: 0,
+  }
+  newRow.subtotal = newRow.quantity * newRow.price
+  form.items.push(newRow)
+}
+
+// --- Fetch products ---
+const fetchProductOptions = async (storeId?: string) => {
+  if (!storeId) { productOptions.value = []; return }
+  loadingProducts.value = true
+  try {
+    const params: any = { per_page: 1000, store_id: storeId }
+    const { data } = await axios.get(route("products.index"), { params })
+    productOptions.value = (data.products.data || []).map((p: any) => ({
+      value: p.id,
+      label: `${p.name} - ${p.brand}`,
+      categories: p.categories?.map((c: any) => c.name) ?? [],
+      brand: p.brand,
+      retail_price: Number(p.retail_price) || 0,
+      wholesale_price: Number(p.wholesale_price) || 0,
+      store_id: p.store?.id ?? null,
+      store_name: p.store?.name ?? null,
+      barcode: p.barcode || null,
+    }))
+  } catch (err) { console.error(err); productOptions.value = [] }
+  finally { loadingProducts.value = false }
+}
+
+watch(() => form.store_id, v => { if (v) fetchProductOptions(v) })
+
+// --- Customer search ---
+const handleCustomerSearch = (query: string) => {
+  customerSearchQuery.value = query
+  const q = query.trim().toLowerCase()
+  filteredCustomerOptions.value = !q
+    ? customerOptions.value
+    : customerOptions.value.filter(c => c.label.toLowerCase().includes(q))
+  return filteredCustomerOptions.value
+}
+
+// --- Product search ---
+const handleProductSearch = (query: string, currentRowProductId?: string | number) => {
+  const q = query.trim().toLowerCase()
+  if (!q) return productOptions.value
+  return productOptions.value.filter(p =>
+    (p.label.toLowerCase().includes(q) ||
+      p.categories?.some((c: string) => c?.toLowerCase().includes(q)) ||
+      p.brand?.toLowerCase().includes(q)) &&
+    !form.items.some(i => i.product_id && i.product_id !== currentRowProductId && i.product_id === p.value)
+  )
+}
+
+// --- Customer type toggle ---
+const toggleCustomerType = () => {
+  form.customer_type = form.customer_type === "retail" ? "wholesale" : "retail"
+  form.items.forEach(r => { if (r.product_id) setProductForRow(r) })
+}
+
+// --- Totals ---
+const total = computed(() => form.items.reduce((s, r) => s + (Number(r.subtotal) || 0), 0))
+const grandTotal = computed(() => total.value - Number(form.discount) + Number(form.tax))
+
+// --- Barcode scanner ---
+const searchProductByBarcode = (code: string) => {
+  if (!code) return
+  const now = Date.now()
+  if (code === lastScannedCode && now - lastScanTime < SCAN_COOLDOWN) return
+  lastScannedCode = code
+  lastScanTime = now
+
+  const product = productOptions.value.find(p => String(p.barcode) === String(code))
+  if (!product) {
+    alert("Product with this barcode was not found")
+    barcodeInput.value = ""
+    return
+  }
+  addOrIncrementProduct(product)
+  barcodeInput.value = ""
+}
+
+const onEnterBarcode = () => searchProductByBarcode(barcodeInput.value)
+
+let quaggaScanner: any = null
+const startCameraScanner = async () => {
+  if (!form.store_id) return alert("Please select store first")
+  isCameraOpen.value = true
+  await nextTick()
+  const target = document.getElementById("camera-scanner")
+  if (!target) return
+
+  Quagga.init({
+    inputStream: {
+      name: "Live",
+      type: "LiveStream",
+      target,
+      constraints: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
+    },
+    locator: { patchSize: "medium", halfSample: true },
+    decoder: { readers: ["ean_reader", "ean_8_reader", "upc_reader", "code_128_reader"] },
+    locate: true
+  }, err => {
+    if (err) { console.error(err); return }
+    Quagga.start()
+    Quagga.offDetected()
+    Quagga.onDetected((data) => {
+      const code = data.codeResult.code
+      const now = Date.now()
+      if (code === lastScannedCode && now - lastScanTime < SCAN_COOLDOWN) return
+      lastScannedCode = code
+      lastScanTime = now
+      searchProductByBarcode(code)
+    })
+  })
+}
+
+const stopCameraScanner = () => {
+  try { Quagga.stop() } catch (e) {}
+  const video = document.querySelector("#camera-scanner video")
+  if (video?.srcObject) (video.srcObject as MediaStream).getTracks().forEach(track => track.stop())
+  const container = document.getElementById("camera-scanner")
+  if (container) container.innerHTML = ""
+  isCameraOpen.value = false
+}
+
+onUnmounted(() => stopCameraScanner())
+
+// --- Submit ---
+const submit = async (e: Event) => {
+  e.preventDefault()
+  if (!form.store_id) return alert("Please select a store")
+  if (!form.items.some(i => i.product_id)) return alert("Please add at least one product")
+
+  const finalCustomerValue = String(form.customer).trim()
+  const existingCustomer = customerOptions.value.find(c => String(c.value) === finalCustomerValue)
+
+  const payload: Record<string, any> = { ...form.data() }
+  delete payload.customer
+  payload.subtotal = total.value
+  payload.total = grandTotal.value
+  if (existingCustomer) payload.customer_id = existingCustomer.value
+  else if (finalCustomerValue) payload.customer_name = finalCustomerValue
+
+  form.post(route("inventories.store"), {
+    data: payload,
+    preserveScroll: true,
+    onSuccess: async (page) => {
+      const inventory = page.props?.inventory
+      const servedBy = page.props.auth?.user?.name
+      const finalName = existingCustomer?.label || finalCustomerValue || "Walk-in Customer"
+      if (inventory) {
+        localOpen.value = false
+        inventoryStore.closeModal()
+        await new Promise(r => setTimeout(r, 100))
+        await inventoryStore.generateInvoice(inventory, servedBy, finalName)
+      }
+    },
+    onError: (err) => console.error("❌ Form errors:", err),
+    onFinish: () => {
+      const s = form.store_id, t = form.customer_type
+      form.reset()
+      form.store_id = s
+      form.customer_type = t
+      form.items = [{ product_id: "", quantity: 1, price: 0, subtotal: 0 }]
+      form.customer = ""
+      filteredCustomerOptions.value = []
+      customerSearchQuery.value = ""
+      if (s) fetchProductOptions(s)
+    }
+  })
+}
+
+// --- Watches ---
+watch(localOpen, async (v) => { if (v) await nextTick().then(() => barcodeRef.value?.focus()) })
+watch(localOpen, (val) => { if (!val) stopCameraScanner() })
+watch(barcodeInput, (val) => { if (val.length >= 6) setTimeout(() => searchProductByBarcode(val), 50) })
+</script>
+
+<template>
+  <Dialog :open="localOpen" @update:open="val => localOpen = val">
+    <DialogContent class="!max-w-none w-[98vw] xl:w-[90vw] h-[98vh] p-0 flex flex-col overflow-hidden">
+
+      <!-- FORM -->
+      <form class="flex flex-col h-full" @submit="submit">
+
+        <!-- HEADER -->
+        <div class="px-6 py-4 border-b bg-white shrink-0 sticky top-0 z-20">
+          <div class="flex items-center justify-between">
+            <div>
+              <DialogHeader class="p-0 m-0">
+                <DialogTitle class="text-lg font-semibold">New Transaction</DialogTitle>
+                <DialogDescription class="sr-only">
+                  Create a transaction with customer details and products
+                </DialogDescription>
+              </DialogHeader>
+              <p class="text-sm text-gray-500 mt-1">Create a new transaction</p>
+            </div>
+
+            <!-- CUSTOMER TYPE TOGGLE -->
+            <div
+              @click="toggleCustomerType"
+              role="button"
+              tabindex="0"
+              class="relative w-30 h-9 flex items-center cursor-pointer rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              :class="form.customer_type === 'retail' ? 'bg-green-500' : 'bg-blue-500'"
+            >
+              <div
+                class="absolute w-9 h-9 bg-white rounded-full shadow transform transition-transform duration-300"
+                :class="form.customer_type === 'retail' ? 'translate-x-0.5' : 'translate-x-[5.1rem]'"
+              ></div>
+              <div class="w-full px-3 text-white font-semibold text-xs flex justify-between gap-2 z-10">
+                <span>Retail</span>
+                <span>Wholesale</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BODY -->
+        <div class="flex-1 px-6 py-4 space-y-4 bg-gray-50 overflow-y-auto">
+
+          <!-- CUSTOMER DETAILS -->
+          <section class="bg-white shadow-sm rounded-lg p-4 shrink-0">
+            <h3 class="text-sm font-semibold text-gray-700 mb-3">Customer Details</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              
+              <!-- Customer select / input -->
+              <div>
+                <Label for="customer" class="text-xs">Customer</Label>
+                <SearchableSelect
+                  id="customer"
+                  v-model="form.customer"
+                  :options="filteredCustomerOptions"
+                  placeholder="Search or enter new customer name"
+                  :creatable="true"
+                  :filter="handleCustomerSearch"
+                  :loading="false"
+                />
+                <p class="text-xs text-gray-500 mt-1">Select existing customer or type new name (optional)</p>
+              </div>
+
+              <!-- Store select / input -->
+              <div v-if="!inventoryStore.hasSingleStore">
+                <Label for="store" class="text-xs">Store</Label>
+                <Select id="store" v-model="form.store_id" :options="inventoryStore.storeOptions" placeholder="Select store" />
+              </div>
+              <div v-else>
+                <Label for="store" class="text-xs">Store</Label>
+                <Input
+                  id="store"
+                  :value="inventoryStore.storeOptions.find(s => s.value === form.store_id)?.label || 'Loading...'"
+                  disabled
+                  class="h-9 bg-gray-100"
+                />
+              </div>
+
+              <!-- Payment method -->
+              <div>
+                <Label for="payment" class="text-xs">Payment Method</Label>
+                <Select id="payment" v-model="form.payment_method" :options="inventoryStore.paymentMethods" />
+              </div>
+            </div>
+          </section>
+
+          <!-- PRODUCT SCANNER -->
+          <section class="bg-white shadow-sm rounded-lg p-4 shrink-0">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-semibold text-gray-700">Products</h3>
+              <Button type="button" class="h-8 text-xs" @click="addRow">+ Add Item</Button>
+            </div>
+
+            <!-- Barcode scanner inputs -->
+            <div class="flex flex-col gap-2 mb-4">
+              <Input
+                ref="barcodeRef"
+                v-model="barcodeInput"
+                placeholder="Scan product barcode (physical scanner)"
+                @keyup.enter="onEnterBarcode"
+                class="h-9"
+              />
+              <div class="space-y-2">
+                <div v-show="isCameraOpen" id="camera-scanner" class="rounded-xl border"></div>
+                <div class="flex gap-2">
+                  <Button @click="startCameraScanner">Start Camera</Button>
+                  <Button variant="destructive" @click="stopCameraScanner">Stop Camera</Button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Product rows -->
+            <div v-if="!form.store_id" class="text-center py-8 text-gray-500">Please select a store</div>
+            <div v-else-if="loadingProducts" class="text-center py-8 text-gray-500">Loading products...</div>
+            <div v-else-if="productOptions.length === 0" class="text-center py-8 text-gray-500">No products available</div>
+            <div v-else class="space-y-3">
+              <!-- Table header -->
+              <div class="grid grid-cols-12 gap-2 items-end text-xs font-medium text-gray-500 pb-2 border-b">
+                <div class="col-span-5">Item</div>
+                <div class="col-span-2">Qty</div>
+                <div class="col-span-2">Price</div>
+                <div class="col-span-2">Subtotal</div>
+                <div class="col-span-1"></div>
+              </div>
+
+              <!-- Table rows -->
+              <div v-for="(row, idx) in form.items" :key="idx" class="grid grid-cols-12 gap-2 items-end pb-3 border-b last:border-b-0">
+                <div class="col-span-5">
+                  <SearchableSelect
+                    :id="`product-${idx}`"
+                    v-model="row.product_id"
+                    :options="productOptions"
+                    placeholder="Search product"
+                    :filter="q => handleProductSearch(q, row.product_id)"
+                    @update:modelValue="val => setProductForRow(row,val)"
+                  />
+                </div>
+                <div class="col-span-2">
+                  <div class="flex items-center gap-1">
+                    <button type="button" class="px-2 py-1 border rounded" @click="setQty(row,row.quantity-1)" :disabled="row.quantity<=1">−</button>
+                    <Input :id="`qty-${idx}`" type="number" v-model.number="row.quantity" @input="() => setQty(row,row.quantity)" class="w-16 h-9 text-center" min="1" />
+                    <button type="button" class="px-2 py-1 border rounded" @click="setQty(row,row.quantity+1)">+</button>
+                  </div>
+                </div>
+                <div class="col-span-2"><Input :value="(row.price||0).toFixed(2)" disabled class="h-9"/></div>
+                <div class="col-span-2"><Input :value="(row.subtotal||0).toFixed(2)" disabled class="h-9 font-semibold"/></div>
+                <div class="col-span-1 flex items-end justify-center">
+                  <Button type="button" variant="destructive" size="sm" @click="removeRow(idx)" v-if="form.items.length>1" class="h-9 w-8 p-0">×</Button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- NOTES & TOTALS -->
+          <section class="bg-white shadow-sm rounded-lg p-4 shrink-0">
+            <Label class="text-xs mb-2">Additional Note</Label>
+            <Textarea v-model="form.note" placeholder="Optional note" class="min-h-[100px] text-sm w-full"/>
+            <div class="bg-gray-50 p-4 rounded-lg mt-4 space-y-2.5">
+              <div class="flex justify-between text-sm"><span class="text-gray-600">Subtotal</span><span class="font-semibold">₦{{ total.toFixed(2) }}</span></div>
+              <div class="flex justify-between items-center">
+                <Label for="discount" class="text-sm text-gray-600">Discount</Label>
+                <Input id="discount" type="number" v-model.number="form.discount" class="w-28 h-9" placeholder="0.00"/>
+              </div>
+              <div class="flex justify-between items-center">
+                <Label for="tax" class="text-sm text-gray-600">Tax</Label>
+                <Input id="tax" type="number" v-model.number="form.tax" class="w-28 h-9" placeholder="0.00"/>
+              </div>
+              <div class="flex justify-between font-bold text-lg pt-2 border-t-2 border-gray-300">
+                <span>Grand Total</span>
+                <span class="text-green-600">₦{{ grandTotal.toFixed(2) }}</span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="border-t bg-white px-6 py-4 shrink-0 sticky bottom-0 z-20">
+          <div class="flex justify-end items-center gap-3">
+            <Button type="button" variant="outline" @click="inventoryStore.closeModal">Cancel</Button>
+            <Button type="submit" :disabled="form.processing || !form.store_id || form.items.every(i => !i.product_id)" class="min-w-[150px]">
+              {{ form.processing ? 'Saving...' : 'Save Transaction' }}
+            </Button>
+          </div>
+        </div>
+
+      </form>
+    </DialogContent>
+  </Dialog>
+</template>
+
+<style scoped>
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #a0aec0; }
+
+/* Camera scanner */
+#camera-scanner {
+  position: relative;
+  width: 100%;
+  height: 260px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: black;
+}
+#camera-scanner video,
+#camera-scanner canvas {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+  position: absolute;
+  inset: 0;
+}
 </style>
+

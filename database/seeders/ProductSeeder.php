@@ -25,7 +25,7 @@ class ProductSeeder extends Seeder
         $paracetamol = Product::firstOrCreate([
             'name' => 'Paracetamol',
             'brand' => 'M & B',
-            'buying_price' => 200,
+            'cost' => 200,
             'retail_price' => 300,
             'wholesale_price' => 250,
             'quantity' => 100,
@@ -39,7 +39,7 @@ class ProductSeeder extends Seeder
         $arthimeter = Product::firstOrCreate([
             'name' => 'Arthimeter',
             'brand' => 'India',
-            'buying_price' => 200,
+            'cost' => 200,
             'retail_price' => 300,
             'wholesale_price' => 250,
             'quantity' => 100,

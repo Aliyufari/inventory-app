@@ -14,6 +14,7 @@ import DialogOverlay from './DialogOverlay.vue'
 
 const props = defineProps<DialogContentProps & { class?: HTMLAttributes['class'] }>()
 const emits = defineEmits<DialogContentEmits>()
+// defineOptions({ inheritAttrs: false})
 
 const delegatedProps = computed(() => {
   const { class: _, ...delegated } = props

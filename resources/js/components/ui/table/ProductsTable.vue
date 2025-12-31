@@ -53,7 +53,7 @@ const productStore = useProduct()
 
             <!-- ✅ Buying Price -->
             <td class="px-5 py-4 whitespace-nowrap">
-              {{ product.buying_price }}
+              {{ product.cost }}
             </td>
 
             <!-- Wholesale Price -->
