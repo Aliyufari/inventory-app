@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create('payments', function (Blueprint $table) {
             $table->uuid('id')->primary();
 
-            $table->foreignUuid('inventory_id')->constrained('inventories')->cascadeOnDelete();
+            // $table->foreignUuid('inventory_id')->constrained('inventories')->cascadeOnDelete();
 
             $table->enum('method', PaymentMethod::values())->default('cash');
             $table->decimal('amount', 12, 2);
