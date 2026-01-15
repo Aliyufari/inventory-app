@@ -13,7 +13,7 @@ import DeleteStore from "@/pages/stores/DeleteStore.vue"
 import { Button } from "@/components/ui/button"
 import { useStore } from "@/stores/stores"
 import { Store as StoreIcon } from "lucide-vue-next"
-import Pagination from "@/pages/components/Pagination1.vue"
+import Pagination from "@/pages/components/Pagination.vue"
 import { SearchableInput } from "@/components/ui/input"
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: "Manage stores", href: "/stores" }]

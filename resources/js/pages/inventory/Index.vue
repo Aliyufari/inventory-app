@@ -7,21 +7,18 @@ import { type BreadcrumbItem, type SharedData, type User } from "@/types"
 import ComponentCard from "@/components/ui/card/ComponentCard.vue"
 import InventoryTable from "@/components/ui/table/InventoryTable.vue"
 import AddInventory from "@/pages/inventory/AddInventory.vue"
-import EditInventory from "@/pages/inventory/EditInventory.vue"
-import ViewInventory from "@/pages/inventory/ViewInventory.vue"
-import DeleteInventory from "@/pages/inventory/DeleteInventory.vue"
-import InvoicePreview from "@/pages/inventory/InvoivePreview.vue"
+// import InvoicePreview from "@/pages/inventory/InvoivePreview.vue"
 import { Button } from "@/components/ui/button"
-import { useInventory } from "@/stores/invoice"
+import { useInvoice } from "@/stores/invoice"
 import { Plus } from "lucide-vue-next"
-import Pagination from "@/pages/components/Pagination1.vue"
-import SearchInput from "@/pages/components/SeachInput.vue"
+import Pagination from "@/pages/components/Pagination.vue"
+import SearchableInput from "@/components/ui/input/SearchableInput.vue"
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: "Inventory", href: "/inventory" }]
 
 const page = usePage<SharedData>()
 const authUser = page.props.auth.user as User
-const inventoryStore = useInventory()
+const inventoryStore = useInvoice()
 
 // Initialize shared data when component mounts
 onMounted(async () => {
@@ -54,7 +51,7 @@ const handleSearch = () => {
       <div class="space-y-5 sm:space-y-6">
         <ComponentCard>
           <div class="mb-4">
-            <SearchInput
+            <SearchableInput
               v-model="inventoryStore.search"
               placeholder="Search inventory..."
               @search="handleSearch"

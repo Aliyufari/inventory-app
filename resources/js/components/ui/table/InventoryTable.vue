@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue"
-import { useInventory } from "@/stores/invoice"
+import { useInvoice } from "@/stores/invoice"
 
-const inventoryStore = useInventory()
+const inventoryStore = useInvoice()
 
 // Inventories list
 const items = computed(() =>

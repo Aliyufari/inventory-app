@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { useInventory } from "@/stores/invoice";
+import { useInvoice } from "@/stores/invoice";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 
-const inventoryStore = useInventory();
+const inventoryStore = useInvoice();
 
 const props = defineProps<{
   inventory?: {

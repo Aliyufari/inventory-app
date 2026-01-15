@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { useInventory } from "@/stores/invoice";
+import { useInvoice } from "@/stores/invoice";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import Select from "@/components/ui/select/Select.vue";
 import { X, Plus } from "lucide-vue-next";
 
-const inventoryStore = useInventory();
+const inventoryStore = useInvoice();
 
 const props = defineProps<{
   inventory?: {

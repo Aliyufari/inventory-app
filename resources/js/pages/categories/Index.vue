@@ -13,8 +13,8 @@ import DeleteCategory from "@/pages/categories/DeleteCategory.vue"
 import { Button } from "@/components/ui/button"
 import { useCategory } from "@/stores/categories"
 import { Section } from "lucide-vue-next"
-import Pagination from "@/pages/components/Pagination1.vue"
-import SearchInput from "@/pages/components/SeachInput.vue"
+import Pagination from "@/pages/components/Pagination.vue"
+import SearchableInput from "@/components/ui/input/SearchableInput.vue"
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: "Manage categories", href: "/categories" }]
 
@@ -61,7 +61,7 @@ const handleSearch = () => {
       <div class="space-y-5 sm:space-y-6">
         <ComponentCard>
           <div class="mb-4">
-            <SearchInput
+            <SearchableInput
               v-model="categoryStore.search"
               placeholder="Search category..."
               @search="handleSearch"

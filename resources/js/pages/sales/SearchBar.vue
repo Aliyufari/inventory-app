@@ -10,8 +10,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits(['barcodeScanned', 'productSearch'])
-const searchInput = ref('')
-const searchInputRef = ref<HTMLInputElement | null>(null)
+const SearchableInput = ref('')
+const SearchableInputRef = ref<HTMLInputElement | null>(null)
 const inputMode = ref<'typing' | 'scanning'>('typing')
 const showCamera = ref(false)
 let html5QrCode: Html5Qrcode | null = null
@@ -22,14 +22,14 @@ watch(() => props.resultsCount, (newCount) => {
   if (newCount === 1 && inputMode.value === 'typing') {
     // We delay slightly so the user sees the match before it clears
     setTimeout(() => {
-      searchInput.value = ''
+      SearchableInput.value = ''
     }, 500)
   }
 })
 
 const handleInput = () => {
   clearTimeout(debounceTimer)
-  const val = searchInput.value.trim()
+  const val = SearchableInput.value.trim()
   
   if (!val) {
     inputMode.value = 'typing'
@@ -41,7 +41,7 @@ const handleInput = () => {
     inputMode.value = 'scanning'
     debounceTimer = setTimeout(() => {
       emit('barcodeScanned', val)
-      searchInput.value = ''
+      SearchableInput.value = ''
       inputMode.value = 'typing'
     }, 150)
   } else {
@@ -85,8 +85,8 @@ onUnmounted(() => html5QrCode?.stop())
       />
 
       <input
-        ref="searchInputRef"
-        v-model="searchInput"
+        ref="SearchableInputRef"
+        v-model="SearchableInput"
         type="text"
         placeholder="Search product or scan..."
         class="w-full pl-11 pr-12 py-3.5 text-base bg-white border border-gray-200 rounded-xl shadow-sm focus:ring-4 focus:ring-primary/5 focus:border-primary outline-none transition-all"

@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, watch } from "vue"
 import { useForm } from "@inertiajs/vue3"
 import axios from "axios"
-import { useInventory } from "@/stores/inventory"
+import { useInvoice } from "@/stores/inventory"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -17,7 +17,7 @@ import Textarea from "@/components/ui/textarea/Textarea.vue"
 import SearchableSelect from "@/components/ui/select/SearchableSelect.vue"
 import Select from "@/components/ui/select/Select.vue"
 
-const inventoryStore = useInventory()
+const inventoryStore = useInvoice()
 defineEmits(["saved"])
 
 type ItemRow = {
@@ -526,7 +526,7 @@ const submit = async (e: Event) => {
 import { ref, computed, watch, onUnmounted, nextTick } from "vue"
 import { useForm } from "@inertiajs/vue3"
 import axios from "axios"
-import { useInventory } from "@/stores/invoice"
+import { useInvoice } from "@/stores/invoice"
 
 // UI Components
 import { Button } from "@/components/ui/button"
@@ -541,7 +541,7 @@ import Select from "@/components/ui/select/Select.vue"
 import Quagga from "quagga"
 
 defineEmits(["saved"])
-const inventoryStore = useInventory()
+const inventoryStore = useInvoice()
 
 // --- Dialog state ---
 const localOpen = ref(inventoryStore.modalType === 'add')

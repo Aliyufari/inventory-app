@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useInventory } from "@/stores/invoice";
+import { useInvoice } from "@/stores/invoice";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const inventoryStore = useInventory();
+const inventoryStore = useInvoice();
 
 const props = defineProps<{
   inventory?: { id: number; customer: string } | null;

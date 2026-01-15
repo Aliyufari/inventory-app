@@ -9,7 +9,7 @@ import { Inventory } from '@/types'
 
 // --- MERGED STATE INTERFACE (for clarity, though 'any' is used in the implementation) ---
 interface TransactionState {
-  // From useInventory
+  // From useInvoice
   inventories: any[]
   pagination: { links: any; meta: any } | null
   modalType: string | null
@@ -43,7 +43,7 @@ export const useTransaction = defineStore('transaction', {
   }),
 
   actions: {
-    // --- INVENTORY / CRUD ACTIONS (FROM useInventory) ---
+    // --- INVENTORY / CRUD ACTIONS (FROM useInvoice) ---
 
     async fetchInventories(page: number = 1) {
       this.loading = true
