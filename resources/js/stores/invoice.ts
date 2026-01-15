@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { jsPDF } from 'jspdf'
 import axios from 'axios'
-import logo from '@/assets/images/logo.jpg'
+import logo from '@/assets/images/logo1.png'
 import robotoFont from '@/assets/fonts/Roboto.ttf'
 import robotoBoldFont from '@/assets/fonts/Roboto-Bold.ttf'
 import { usePage } from '@inertiajs/vue3'
@@ -334,16 +334,16 @@ export const useInvoice = defineStore('inventory', {
 
         doc.setFontSize(11)
         doc.setFont('Roboto', 'bold')
-        doc.text('DYK SUPER STORE LTD', pageWidth / 2, y, { align: 'center' })
+        doc.text('AL-AMIN PHARMACY & STORE', pageWidth / 2, y, { align: 'center' })
         y += 4
 
         doc.setFontSize(7)
         doc.setFont('Roboto', 'normal')
-        doc.text('Justice Quarters, Opp. Dogon Yaro Roundabout GRA, Bauchi', pageWidth / 2, y, { align: 'center' })
+        doc.text('Kofar Dumi Street, Bauchi', pageWidth / 2, y, { align: 'center' })
         y += 3
-        doc.text('Phone: 08073181971, 07031545880', pageWidth / 2, y, { align: 'center' })
+        doc.text('Phone: 08068321306, 07033668299', pageWidth / 2, y, { align: 'center' })
         y += 3
-        doc.text('Email: info.dyksuperstore@gmail.com', pageWidth / 2, y, { align: 'center' })
+        doc.text('Email: info.ap@gmail.com', pageWidth / 2, y, { align: 'center' })
         y += 4
 
         doc.setLineWidth(0.2)
@@ -493,7 +493,7 @@ export const useInvoice = defineStore('inventory', {
         y += 4.0
         doc.setFontSize(6.5)
         doc.setFont('Roboto', 'normal')
-        doc.text('Powered by: AFGICafe | +2347031545880', pageWidth / 2, y, { align: 'center' })
+        doc.text('Powered by: AFGICAFE | (234) 7031545880', pageWidth / 2, y, { align: 'center' })
 
         // Output and State Update
         this.invoicePDFDataURL = doc.output('dataurlstring')

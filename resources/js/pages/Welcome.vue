@@ -7,8 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LoaderCircle } from 'lucide-vue-next';
 
-import logo from '@/assets/images/logo.jpg';
-import banner from '@/assets/images/b1.jpg';
+import logo from '@/assets/images/logo1.png';
+import banner from '@/assets/images/authImage.jpg';
 
 const form = useForm({
   email: '',
@@ -53,12 +53,12 @@ const submit = () => {
             />
           </div>
 
-          <h1 class="text-2xl font-bold text-slate-900">
-            DYK SUPER STORE LTD
+          <h1 class="text-xl font-bold text-slate-900">
+            AL-AMIN PHARMACY & STORE
           </h1>
 
           <p class="mt-1 text-sm text-slate-500">
-            Supermarket Management System
+            Pharmacy Management System
           </p>
         </div>
 
@@ -123,7 +123,7 @@ const submit = () => {
 
         <!-- Footer -->
         <p class="mt-6 text-center text-xs text-slate-400">
-          © {{ new Date().getFullYear() }} DYK Super Store. All rights reserved.
+          © {{ new Date().getFullYear() }} Al-Amin Pharmacy & Store. All rights reserved.
         </p>
       </div>
     </div>
