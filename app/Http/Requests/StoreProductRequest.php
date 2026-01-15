@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreProductRequest extends FormRequest
 {
@@ -23,32 +23,73 @@ class StoreProductRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255', Rule::unique('products', 'name')],
-            'brand' => ['nullable', 'string', 'max:255'],
-            'cost' => ['required', 'numeric', 'min:0'],
-            'retail_price' => ['required', 'numeric', 'min:0'],
-            'wholesale_price' => ['required', 'numeric', 'min:0'],
-            'quantity' => ['required', 'integer', 'min:0'],
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('products', 'name'),
+            ],
 
-            // Relationships
-            'store_id' => ['required', 'uuid', 'exists:stores,id'],
+            'brand' => ['nullable', 'string', 'max:255'],
+
+            'barcode' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('products', 'barcode'),
+            ],
+
+            'cost' => ['required', 'numeric', 'min:0'],
+
+            'retail_price' => ['required', 'numeric', 'min:0'],
+
+            'wholesale_price' => ['nullable', 'numeric', 'min:0'],
+
+            'allow_wholesale' => ['required', 'boolean'],
+
+            'unit' => ['nullable', 'string', 'max:50'],
+
+            'units_per_packet' => ['nullable', 'integer', 'min:1'],
+
+            'packets_per_carton' => ['nullable', 'integer', 'min:1'],
+
+            'min_stock_level' => ['nullable', 'integer', 'min:0'],
+
+            'status' => ['required', 'boolean'],
+
             'category_ids' => ['required', 'array', 'min:1'],
             'category_ids.*' => ['uuid', 'exists:categories,id'],
 
-            // Unit conversion fields
-            'units_per_packet' => ['nullable', 'integer', 'min:1'],
-            'packets_per_carton' => ['nullable', 'integer', 'min:1'],
+            'store_id' => ['required', 'string', 'exists:stores,id'],
+
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
 
             'description' => ['nullable', 'string', 'max:1000'],
         ];
     }
 
+    /**
+     * Custom error messages.
+     */
     public function messages(): array
     {
         return [
             'name.unique' => 'This product name already exists.',
+            'barcode.unique' => 'This barcode is already assigned to another product.',
             'category_ids.required' => 'Please select at least one category.',
-            'store_id.exists' => 'Selected store not found.',
+            'allow_wholesale.required' => 'Please specify if wholesale pricing is allowed.',
+            'status.required' => 'Please specify the product status.',
         ];
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'allow_wholesale' => filter_var($this->allow_wholesale, FILTER_VALIDATE_BOOLEAN),
+            'status' => filter_var($this->status, FILTER_VALIDATE_BOOLEAN),
+        ]);
     }
 }

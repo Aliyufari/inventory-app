@@ -29,6 +29,8 @@ export interface SharedData extends PageProps {
 export interface Role {
     id: number;
     name: string;
+    created_at: date;
+    updated_at: date;
 }
 
 export interface User {
@@ -39,8 +41,19 @@ export interface User {
     gender: string;
     role_id: Role.id;
     email_verified_at: string | null;
+    status: boolean;
     created_at: date;
     updated_at: date;
+}
+
+export interface Customer {
+  id: string | number
+  name: string | null
+  email?: string | null
+  phone?: string | null
+  address?: string | null
+  created_at?: string
+  updated_at?: string
 }
 
 export interface Store {
@@ -60,15 +73,35 @@ export interface Category {
 }
 
 export interface Product {
-    id: string;
-    name: string;
-    wholesale_price: number;
-    retail_price: number;
-    quantity: number;
-    brand: string;
-    description: string;
-    created_at: date;
-    updated_at: date;
+    id: string
+    name: string
+    wholesale_price: number
+    retail_price: number
+    quantity: number
+    brand: string
+    barcode: string
+    description: string
+    image?: string | null
+    unit?: string | null
+    units_per_packet?: number | null
+    packets_per_carton?: number | null
+    min_stock_level?: number | null
+    allow_wholesale: boolean
+    status: boolean
+    categories: {
+        id: string
+        name: string
+    }[]
+    store?: {
+        id: string
+        name: string
+    } | null
+    creator?: {
+        id: string
+        name: string
+    } | null
+    created_at: Date
+    updated_at: Date
 }
 
 export interface InventoryItem {

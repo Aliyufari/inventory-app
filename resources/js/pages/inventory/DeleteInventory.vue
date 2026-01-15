@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useInventory } from "@/stores/inventory";
+import { useInventory } from "@/stores/invoice";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

@@ -33,8 +33,10 @@ class UpdateUserRequest extends FormRequest
                 'max:255',
                 Rule::unique('users', 'email')->ignore($this->route('user'))
             ],
-            'role_id' => ['required', 'string', 'exists:roles,id'],
             'gender' => ['required', 'string'],
+            'role_id' => ['required', 'string', 'exists:roles,id'],
+            'store_ids' => ['required', 'array', 'min:1'],
+            'store_ids.*' => ['string', 'exists:stores,id'],
             'status' => ['required', 'string']
         ];
     }

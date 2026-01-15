@@ -14,7 +14,7 @@ const emit = defineEmits<{
 }>();
 
 const isOpen = ref(false);
-const selected = ref<(string | number)[]>(props.modelValue ?? []);
+const selected = ref<(string | number)[]>([...(props.modelValue ?? [])]);
 const wrapper = ref<HTMLElement | null>(null);
 
 const toggleDropdown = () => (isOpen.value = !isOpen.value);
@@ -25,23 +25,38 @@ const toggleItem = (val: string | number) => {
   } else {
     selected.value.push(val);
   }
-  emit("update:modelValue", selected.value);
+  emit("update:modelValue", [...selected.value]);
 };
 
 const removeItem = (val: string | number) => {
   selected.value = selected.value.filter((v) => v !== val);
-  emit("update:modelValue", selected.value);
+  emit("update:modelValue", [...selected.value]);
 };
 
 const isSelected = (val: string | number) => selected.value.includes(val);
 
 onClickOutside(wrapper, () => (isOpen.value = false));
 
+// --- FIXED WATCH: only update selected if modelValue actually changes externally ---
 watch(
   () => props.modelValue,
-  (val) => (selected.value = val ?? [])
+  (val) => {
+    if (!val) {
+      selected.value = [];
+      return;
+    }
+
+    // Check if the new prop value is different from current internal selection
+    const equal =
+      selected.value.length === val.length &&
+      selected.value.every((v) => val.includes(v));
+
+    if (!equal) selected.value = [...val];
+  },
+  { immediate: true }
 );
 </script>
+
 
 <template>
   <div ref="wrapper" class="relative w-full" :class="props.class">

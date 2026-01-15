@@ -17,32 +17,116 @@ class Product extends Model
     protected $fillable = [
         'name',
         'brand',
+        'barcode',
         'cost',
         'retail_price',
         'wholesale_price',
-        'quantity',
+        'store_id',
+        'creator_id',
+        'updator_id',
         'unit',
         'units_per_packet',
         'packets_per_carton',
-        'store_id',
+        'status',
+        'allow_wholesale',
+        'min_stock_level',
+        'image',
         'description',
     ];
 
-    // A product belongs to a store
-    public function store(): BelongsTo
-    {
-        return $this->belongsTo(Store::class);
-    }
-
-    // A product can belong to many categories
+    /* ============================
+    | Relationships
+    |============================ */
     public function categories(): BelongsToMany
     {
         return $this->belongsToMany(Category::class);
     }
 
-    // A product appears in many inventory items
-    public function inventoryItems(): HasMany
+    public function store()
     {
-        return $this->hasMany(InventoryItem::class);
+        return $this->belongsTo(Store::class);
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'creator_id');
+    }
+
+    public function updator()
+    {
+        return $this->belongsTo(User::class, 'updator_id');
+    }
+
+    public function stockMovements()
+    {
+        return $this->hasMany(StockMovement::class);
+    }
+
+    public function saleItems()
+    {
+        return $this->hasMany(SaleItem::class);
+    }
+
+    protected $casts = [
+        'cost' => 'decimal:2',
+        'retail_price' => 'decimal:2',
+        'wholesale_price' => 'decimal:2',
+        'allow_wholesale' => 'boolean',
+        'status' => 'boolean',
+        'units_per_packet' => 'integer',
+        'packets_per_carton' => 'integer',
+        'min_stock_level' => 'integer',
+    ];
+
+    public function getImageUrlAttribute()
+    {
+        return $this->image
+            ? asset('storage/' . $this->image)
+            : null;
+    }
+
+    /* ============================
+     | Accessors
+     |============================ */
+    public function getStockAttribute(): int
+    {
+        return (int) $this->stockMovements()->sum('quantity');
+    }
+
+    /* ============================
+     | Scopes
+     |============================ */
+    public function scopeLowStock($query, int $threshold = 5)
+    {
+        return $query->withSum('stockMovements as stock', 'quantity')
+            ->having('stock', '<=', $threshold);
+    }
+
+    public function isLowStock(): bool
+    {
+        return $this->stock <= $this->min_stock_level;
+    }
+
+    public function isOutOfStock(): bool
+    {
+        return $this->stock <= 0;
+    }
+
+    public function getPriceFor(int $quantity): float
+    {
+        if ($this->allow_wholesale && $quantity >= $this->units_per_packet) {
+            return (float) $this->wholesale_price;
+        }
+
+        return (float) $this->retail_price;
+    }
+
+    protected static function booted()
+    {
+        static::deleting(function ($product) {
+            if ($product->saleItems()->exists()) {
+                throw new \Exception('Product cannot be deleted once sold.');
+            }
+        });
     }
 }

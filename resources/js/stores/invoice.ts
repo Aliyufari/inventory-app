@@ -57,7 +57,7 @@ export interface InventoryState {
 
 interface CombinedState extends InventoryState, InvoiceState {}
 
-export const useInventory = defineStore('inventory', {
+export const useInvoice = defineStore('inventory', {
   state: (): CombinedState => ({
     // Inventory-related state
     inventories: [],
@@ -537,44 +537,79 @@ export const useInventory = defineStore('inventory', {
       return { customer: existing ? existing.value : value }
     },
 
-    async fetchInvoice(id: string | { id?: string; inventory?: string }) {
-      this.isGenerating = true
-      this.error = null
+    // async fetchInvoice(id: string | { id?: string; inventory?: string }) {
+    //   this.isGenerating = true
+    //   this.error = null
 
-      try {
-        const inventoryId =
-          typeof id === 'object'
-            ? (id.inventory || id.id)
-            : id
+    //   try {
+    //     const inventoryId =
+    //       typeof id === 'object'
+    //         ? (id.inventory || id.id)
+    //         : id
 
-        console.log("ID " + inventoryId);
+    //     console.log("ID " + inventoryId);
         
 
-        const { data } = await axios.get(route('inventories.show', { inventory: inventoryId }))
-        console.log("DATA " + data);
+    //     const { data } = await axios.get(route('inventories.show', { inventory: inventoryId }))
+    //     console.log("DATA " + data);
 
 
-        const inv: Inventory = data.inventory || data
+    //     const inv: Inventory = data.inventory || data
 
-        // 🧠 Normalize items
-        let items = inv.items || inv.inventory_items || []
-        if (inv.inventory && inv.inventory.inventory_items) {
-          items = inv.inventory.inventory_items
-        }
+    //     // 🧠 Normalize items
+    //     let items = inv.items || inv.inventory_items || []
+    //     if (inv.inventory && inv.inventory.inventory_items) {
+    //       items = inv.inventory.inventory_items
+    //     }
 
-        inv.items = items
+    //     inv.items = items
 
-        const servedBy = inv.user?.name || usePage().props.auth?.user?.name || 'N/A'
-        const customerName = (inv as any).customer?.name || (inv as any).customer_name || 'Walk-in'
+    //     const servedBy = inv.user?.name || usePage().props.auth?.user?.name || 'N/A'
+    //     const customerName = (inv as any).customer?.name || (inv as any).customer_name || 'Walk-in'
 
-        await this.generateInvoice(inv, servedBy, customerName)
-      } catch (err: any) {
-        console.error('❌ Error fetching and generating invoice:', err)
-        this.error = err.message || 'Failed to fetch and generate invoice.'
-      } finally {
-        this.isGenerating = false
+    //     await this.generateInvoice(inv, servedBy, customerName)
+    //   } catch (err: any) {
+    //     console.error('❌ Error fetching and generating invoice:', err)
+    //     this.error = err.message || 'Failed to fetch and generate invoice.'
+    //   } finally {
+    //     this.isGenerating = false
+    //   }
+    // }
+    async fetchInvoice(id: string | { id?: string; sale?: string }) {
+    this.isGenerating = true
+    this.error = null
+
+    try {
+      const saleId = typeof id === 'object' ? (id.sale || id.id) : id
+
+      console.log("Fetching sale ID:", saleId)
+
+      // Use the sales.show route instead of inventories.show
+      const { data } = await axios.get(route('sales.show', { sale: saleId }))
+      
+      console.log("Sale data received:", data)
+
+      const inv: Inventory = data.inventory || data.sale || data
+
+      // Normalize items - handle both sale_items and inventory_items
+      let items = inv.items || inv.inventory_items || []
+      if (inv.inventory && inv.inventory.inventory_items) {
+        items = inv.inventory.inventory_items
       }
+
+      inv.items = items
+
+      const servedBy = inv.user?.name || usePage().props.auth?.user?.name || 'N/A'
+      const customerName = (inv as any).customer?.name || (inv as any).customer_name || 'Walk-in'
+
+      await this.generateInvoice(inv, servedBy, customerName)
+    } catch (err: any) {
+      console.error('❌ Error fetching and generating invoice:', err)
+      this.error = err.message || 'Failed to fetch and generate invoice.'
+    } finally {
+      this.isGenerating = false
     }
+  },
   },
 
   getters: {

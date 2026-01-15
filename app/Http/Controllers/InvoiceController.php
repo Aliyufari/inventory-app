@@ -71,14 +71,14 @@ class InvoiceController extends Controller
 
             DB::commit();
 
-            return redirect()->back()->with([
+            return back()->with([
                 'status' => true,
                 'message' => 'Invoice created successfully'
             ], JsonResponse::HTTP_CREATED);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
 
-            return redirect()->back()->withErrors([
+            return back()->withErrors([
                 'status' => false,
                 'errors' => $e->getMessage(),
             ]);
@@ -121,14 +121,14 @@ class InvoiceController extends Controller
 
             DB::commit();
 
-            return redirect()->back()->with([
+            return back()->with([
                 'status' => true,
                 'message' => 'Invoice updated successfully'
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
 
-            return redirect()->back()->withErrors([
+            return back()->withErrors([
                 'status' => false,
                 'errors' => $e->getMessage(),
             ]);
@@ -140,12 +140,12 @@ class InvoiceController extends Controller
         try {
             $invoice->delete();
 
-            return redirect()->back()->with([
+            return back()->with([
                 'status' => true,
                 'message' => 'Invoice deleted successfully'
             ]);
-        } catch (\Exception $e) {
-            return redirect()->back()->withErrors([
+        } catch (\Throwable $e) {
+            return back()->withErrors([
                 'status' => false,
                 'errors' => $e->getMessage(),
             ]);

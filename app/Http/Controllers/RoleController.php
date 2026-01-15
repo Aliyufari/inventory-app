@@ -4,13 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\Role;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class RoleController extends Controller
 {
     public function index(): JsonResponse
     {
-        $roles = Role::all();
+        $authUser = auth()->user();
+
+        if ($authUser->role === 'super') {
+            $roles = Role::all();
+        } else {
+            $roles = Role::whereIn('name', ['admin', 'user'])->get();
+        }
 
         return response()->json([
             'status' => true,

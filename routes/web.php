@@ -17,5 +17,7 @@ require __DIR__ . '/users.php';
 require __DIR__ . '/stores.php';
 require __DIR__ . '/categories.php';
 require __DIR__ . '/products.php';
+require __DIR__ . '/sales.php';
 require __DIR__ . '/inventories.php';
 require __DIR__ . '/customers.php';
+require __DIR__ . '/reports.php';

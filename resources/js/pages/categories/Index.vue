@@ -13,7 +13,7 @@ import DeleteCategory from "@/pages/categories/DeleteCategory.vue"
 import { Button } from "@/components/ui/button"
 import { useCategory } from "@/stores/categories"
 import { Section } from "lucide-vue-next"
-import Pagination from "@/pages/components/Pagination.vue"
+import Pagination from "@/pages/components/Pagination1.vue"
 import SearchInput from "@/pages/components/SeachInput.vue"
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: "Manage categories", href: "/categories" }]

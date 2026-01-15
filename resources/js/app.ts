@@ -1,4 +1,5 @@
 import '../css/app.css';
+import 'vue-sonner/style.css';
 
 import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
@@ -7,6 +8,7 @@ import { createApp, h } from 'vue';
 import { ZiggyVue } from 'ziggy-js';
 import { initializeTheme } from './composables/useAppearance';
 import { createPinia } from 'pinia';
+import { registerSonner } from './plugins/sonner';
 
 // Extend ImportMeta interface for Vite...
 declare module 'vite/client' {
@@ -27,13 +29,16 @@ createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) => resolvePageComponent(`./pages/${name}.vue`, import.meta.glob<DefineComponent>('./pages/**/*.vue')),
     setup({ el, App, props, plugin }) {
+        const app = createApp({ render: () => h(App, props) });
         const pinia = createPinia();
 
-        createApp({ render: () => h(App, props) })
-            .use(plugin)
-            .use(pinia)
-            .use(ZiggyVue)
-            .mount(el);
+        app.use(plugin);
+        app.use(pinia);
+        app.use(ZiggyVue);
+
+        registerSonner(app);
+
+        app.mount(el);
     },
     progress: {
         color: '#4B5563',

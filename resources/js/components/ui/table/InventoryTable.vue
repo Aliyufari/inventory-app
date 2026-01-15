@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue"
-import { useInventory } from "@/stores/inventory"
+import { useInventory } from "@/stores/invoice"
 
 const inventoryStore = useInventory()
 
@@ -173,7 +173,7 @@ const printInvoice = async (inv: any) => {
                   class="p-1 rounded hover:bg-red-50 text-red-600 transition-colors"
                   title="Delete"
                 >
-                  🗑
+                  <Trash2 class="w-4 h-4" />
                 </button>
               </div>
             </td>

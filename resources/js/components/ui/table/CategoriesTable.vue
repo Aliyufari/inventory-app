@@ -56,7 +56,7 @@ console.log("Error " + categoryStore.categories);
                   class="p-1 rounded hover:bg-gray-100 text-red-600"
                   title="Delete"
                 >
-                  🗑
+                  <Trash2 class="w-4 h-4" />
                 </button>
               </div>
             </td>

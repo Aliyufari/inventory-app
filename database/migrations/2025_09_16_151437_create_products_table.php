@@ -2,6 +2,7 @@
 
 use App\Models\Category;
 use App\Models\Store;
+use App\Models\User;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -15,24 +16,27 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            // Basic product info
             $table->string('name');
             $table->string('brand')->nullable();
             $table->string('barcode')->nullable()->unique()->index();
+
             $table->decimal('cost', 10, 2);
-            $table->decimal('retail_price', 10, 2); // price per base unit
-            $table->decimal('wholesale_price', 10, 2); // price per base unit
-            $table->integer('quantity')->default(0); // always store in base units
+            $table->decimal('retail_price', 10, 2);
+            $table->decimal('wholesale_price', 10, 2);
 
-            // Unit & conversion handling
-            $table->string('unit')->default('pcs'); // base unit, e.g., tablet, bottle
-            $table->integer('units_per_packet')->nullable(); // e.g., 10 tablets per strip
-            $table->integer('packets_per_carton')->nullable(); // e.g., 10 strips per carton
+            $table->string('unit')->default('pcs');
+            $table->integer('units_per_packet')->nullable();
+            $table->integer('packets_per_carton')->nullable();
 
-            // Relationships
             $table->foreignIdFor(Store::class, 'store_id')->constrained()->cascadeOnDelete();
+            $table->foreignIdFor(User::class, 'creator_id')->constrained()->cascadeOnDelete();
+            $table->foreignIdFor(User::class, 'updator_id')->nullable()->constrained()->cascadeOnDelete();
 
-            // Extra info
+            $table->boolean('status')->default(true);
+            $table->boolean('allow_wholesale')->default(true);
+            $table->string('min_stock_level')->default(10);
+
+            $table->string('image')->nullable();
             $table->text('description')->nullable();
 
             $table->timestamps();

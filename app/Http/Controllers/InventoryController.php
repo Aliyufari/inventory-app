@@ -21,39 +21,49 @@ class InventoryController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index($storeId)
     {
-        $query = Inventory::with(['user', 'items.product']);
+        // $query = Inventory::with(['user', 'items.product']);
 
-        if ($search = request('search')) {
-            $query->where('invoice_number', 'like', "%{$search}%")
-                ->orWhere('status', 'like', "%{$search}%")
-                ->orWhere('total', 'like', "%{$search}%")
-                ->orWhere('payment_method', 'like', "%{$search}%")
-                ->orWhere('created_at', 'like', "%{$search}%")
-                ->orWhereHas('user', fn($q) => $q->where('name', 'like', "%{$search}%"));
-        }
+        // if ($search = request('search')) {
+        //     $query->where('invoice_number', 'like', "%{$search}%")
+        //         ->orWhere('status', 'like', "%{$search}%")
+        //         ->orWhere('total', 'like', "%{$search}%")
+        //         ->orWhere('payment_method', 'like', "%{$search}%")
+        //         ->orWhere('created_at', 'like', "%{$search}%")
+        //         ->orWhereHas('user', fn($q) => $q->where('name', 'like', "%{$search}%"));
+        // }
 
-        $inventories = $query->latest()
-            ->paginate(15)
-            ->withQueryString()
-            ->through(fn($inventory) => [
-                'id' => $inventory->id,
-                'invoice_number' => $inventory->invoice_number,
-                'user' => [
-                    'id' => $inventory->user?->id,
-                    'name' => $inventory->user?->name,
+        // $inventories = $query->latest()
+        //     ->paginate(15)
+        //     ->withQueryString()
+        //     ->through(fn($inventory) => [
+        //         'id' => $inventory->id,
+        //         'invoice_number' => $inventory->invoice_number,
+        //         'user' => [
+        //             'id' => $inventory->user?->id,
+        //             'name' => $inventory->user?->name,
+        //         ],
+        //         'total' => $inventory->total,
+        //         'payment_method' => $inventory->payment_method,
+        //         'status' => $inventory->status,
+        //         'created_at' => $inventory->created_at,
+        //         'updated_at' => $inventory->updated_at,
+        //     ]);
+
+        // if (request()->wantsJson()) {
+        //     return response()->json(['inventories' => $inventories]);
+        // }
+
+        $inventories = Product::where('store_id', $storeId)
+            ->withSum(
+                [
+                    'stockMovements as stock' => fn($q) =>
+                    $q->where('store_id', $storeId)
                 ],
-                'total' => $inventory->total,
-                'payment_method' => $inventory->payment_method,
-                'status' => $inventory->status,
-                'created_at' => $inventory->created_at,
-                'updated_at' => $inventory->updated_at,
-            ]);
-
-        if (request()->wantsJson()) {
-            return response()->json(['inventories' => $inventories]);
-        }
+                'quantity'
+            )
+            ->get();
 
         return Inertia::render('inventory/Index', [
             'inventories' => $inventories,
@@ -184,13 +194,13 @@ class InventoryController extends Controller
 
             DB::commit();
 
-            return redirect()->back()->with([
+            return back()->with([
                 'status'  => true,
                 'message' => 'Inventory transaction updated successfully',
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollBack();
-            return redirect()->back()->withErrors([
+            return back()->withErrors([
                 'status' => false,
                 'errors' => $e->getMessage(),
             ]);
@@ -212,12 +222,12 @@ class InventoryController extends Controller
 
             $inventory->delete();
 
-            return redirect()->back()->with([
+            return back()->with([
                 'status'  => true,
                 'message' => 'Inventory transaction deleted successfully',
             ]);
-        } catch (\Exception $e) {
-            return redirect()->back()->withErrors([
+        } catch (\Throwable $e) {
+            return back()->withErrors([
                 'status' => false,
                 'errors' => $e->getMessage(),
             ]);

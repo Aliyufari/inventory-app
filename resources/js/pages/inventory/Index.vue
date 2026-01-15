@@ -12,9 +12,9 @@ import ViewInventory from "@/pages/inventory/ViewInventory.vue"
 import DeleteInventory from "@/pages/inventory/DeleteInventory.vue"
 import InvoicePreview from "@/pages/inventory/InvoivePreview.vue"
 import { Button } from "@/components/ui/button"
-import { useInventory } from "@/stores/inventory"
+import { useInventory } from "@/stores/invoice"
 import { Plus } from "lucide-vue-next"
-import Pagination from "@/pages/components/Pagination.vue"
+import Pagination from "@/pages/components/Pagination1.vue"
 import SearchInput from "@/pages/components/SeachInput.vue"
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: "Inventory", href: "/inventory" }]

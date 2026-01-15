@@ -4,11 +4,19 @@ import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Store, Briefcase, Bell, Wrench, NotepadText, LocateFixed, User, Section, DollarSign } from 'lucide-vue-next';
+import { Link, usePage } from '@inertiajs/vue3';
+import { BookOpen, Folder, LayoutGrid, Store, Truck, Bell, Wrench, NotepadText, LocateFixed, Users, Section, Wallet, Package, ShoppingCart, Warehouse, PersonStanding, HandCoins } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
+import { computed } from 'vue';
 
-const mainNavItems: NavItem[] = [
+const page = usePage();
+const user = page.props.auth.user;
+
+// Allowed roles that can see everything
+const allowedRoles = ['super', 'owner', 'admin'];
+
+// Original main nav
+const allNavItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: '/dashboard',
@@ -17,7 +25,7 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Users',
         href: '/users',
-        icon: User,
+        icon: Users,
     },
     {
         title: 'Stores',
@@ -32,16 +40,41 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Products',
         href: '/products',
-        icon: Briefcase,
+        icon: Package,
+    },
+    {
+        title: 'Supply',
+        href: '/supply',
+        icon: Truck,
+    },
+    {
+        title: 'Sales',
+        href: '/sales',
+        icon: ShoppingCart,
     },
     {
         title: 'Inventory',
         href: '/inventories',
-        icon: DollarSign,
+        icon: Warehouse ,
     },
     {
-        title: 'Reoprts',
-        href: '/reports',
+        title: 'Customers',
+        href: '/customers',
+        icon: HandCoins,
+    },
+    {
+        title: 'Supliers',
+        href: '/supliers',
+        icon: PersonStanding,
+    },
+    {
+        title: 'Credits',
+        href: '/credits',
+        icon: Wallet,
+    },
+    {
+        title: 'Reports',
+        href: '/sales-reports',
         icon: NotepadText,
     },
     {
@@ -61,17 +94,16 @@ const mainNavItems: NavItem[] = [
     }
 ];
 
+const mainNavItems = computed(() => {
+    if (!user || !allowedRoles.includes(user?.role?.name)) {
+        return allNavItems.filter(item => ['Sales', 'Reports'].includes(item.title));
+    }
+    return allNavItems;
+});
+
 const footerNavItems: NavItem[] = [
-    {
-        title: 'Github Repo',
-        href: 'https://github.com/laravel/vue-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#vue',
-        icon: BookOpen,
-    },
+    { title: 'Github Repo', href: 'https://github.com/laravel/vue-starter-kit', icon: Folder },
+    { title: 'Documentation', href: 'https://laravel.com/docs/starter-kits#vue', icon: BookOpen },
 ];
 </script>
 

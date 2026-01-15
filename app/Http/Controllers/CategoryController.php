@@ -69,13 +69,13 @@ class CategoryController extends Controller
 
             // return to_route('users.index');
 
-            return redirect()->back()->with([
+            return back()->with([
                 'status' => true,
                 'message' => 'Category added successfully',
                 'category' => $category
             ]);
-        } catch (\Exception $e) {
-            return redirect()->back()->withErrors([
+        } catch (\Throwable $e) {
+            return back()->withErrors([
                 'status' => false,
                 'errors' => $e->getMessage()
             ]);
@@ -102,13 +102,13 @@ class CategoryController extends Controller
             $category->refresh();
             // return to_route('users.index');
 
-            return redirect()->back()->with([
+            return back()->with([
                 'status' => true,
                 'message' => 'Category added successfully',
                 'category' => $category
             ]);
-        } catch (\Exception $e) {
-            return redirect()->back()->withErrors([
+        } catch (\Throwable $e) {
+            return back()->withErrors([
                 'status' => false,
                 'errors' => $e->getMessage()
             ]);
@@ -127,7 +127,7 @@ class CategoryController extends Controller
                 'status' => true,
                 'message' => 'Category deleted successfully',
             ], 200);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return response()->json([
                 'status' => false,
                 'message' => $e->getMessage(),

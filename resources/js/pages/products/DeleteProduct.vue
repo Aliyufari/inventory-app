@@ -1,68 +1,52 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ref } from "vue"
+import { useProduct } from "@/stores/products"
+import { toast } from "vue-sonner"
+import Prompt from "@/components/ui/Prompt.vue"
 
-import { useProduct } from "@/stores/products";
+const productStore = useProduct()
+const emit = defineEmits<{
+  (e: 'deleted'): void
+}>()
 
-const productStore = useProduct();
-const loading = ref(false);
-const error = ref<string | null>(null);
+const loading = ref(false)
+const showPrompt = ref(true)
 
-const handleDelete = async (e: Event) => {
-  e.preventDefault();
-  if (!productStore.selectedProduct?.id) {
-    error.value = "No product selected.";
-    return;
+const handleDelete = async () => {
+  const product = productStore.selectedProduct
+  if (!product?.id) {
+    toast.error("No product selected")
+    return
   }
 
-  loading.value = true;
-  error.value = null;
-
+  loading.value = true
   try {
-    await productStore.deleteProduct(productStore.selectedProduct.id);
+    await productStore.deleteProduct(product.id)
+    emit('deleted')
+    showPrompt.value = false
   } catch (err: any) {
-    console.error("Error deleting product:", err);
-    error.value = "Failed to delete product.";
+    console.error("Delete failed:", err)
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 
-const closeModal = () => {
-  error.value = null;
-  productStore.closeModal();
-};
+const closePrompt = () => {
+  showPrompt.value = false
+  productStore.closeModal()
+}
 </script>
 
 <template>
-  <Dialog
-    :open="productStore.modalType === 'delete'"
-    @update:open="val => { if (!val) productStore.closeModal() }"
-  >
-    <DialogContent>
-      <form @submit="handleDelete" class="space-y-6">
-        <DialogHeader>
-          <DialogTitle>Are you sure you want to delete this product?</DialogTitle>
-          <DialogDescription>This action cannot be reverted.</DialogDescription>
-        </DialogHeader>
-
-        <DialogFooter class="gap-2">
-          <Button type="button" variant="secondary" @click="closeModal">
-            Cancel
-          </Button>
-          <Button type="submit" variant="destructive" :disabled="loading">
-            Delete
-          </Button>
-        </DialogFooter>
-      </form>
-    </DialogContent>
-  </Dialog>
+  <Prompt
+    v-model="showPrompt"
+    title="Delete Product"
+    :message="`Are you sure you want to delete '${productStore.selectedProduct?.name}'?`"
+    confirmText="Delete"
+    cancelText="Cancel"
+    danger
+    :loading="loading"
+    @confirm="handleDelete"
+    @cancel="closePrompt"
+  />
 </template>

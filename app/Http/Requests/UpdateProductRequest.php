@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateProductRequest extends FormRequest
 {
@@ -22,25 +22,45 @@ class UpdateProductRequest extends FormRequest
      */
     public function rules(): array
     {
+        $productId = $this->route('product')->id;
+
         return [
             'name' => [
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('products', 'name')->ignore($this->route('product')),
+                Rule::unique('products', 'name')->ignore($productId),
+            ],
+
+            'brand' => ['nullable', 'string', 'max:255'],
+
+            'barcode' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('products', 'barcode')->ignore($productId),
             ],
 
             'cost' => ['required', 'numeric', 'min:0'],
             'retail_price' => ['required', 'numeric', 'min:0'],
-            'wholesale_price' => ['required', 'numeric', 'min:0'],
-            'quantity' => ['nullable', 'numeric', 'min:0'],
-            'store_id' => ['required', 'uuid', 'exists:stores,id'],
-            'category_ids' => ['nullable', 'array'],
-            'category_ids.*' => ['exists:categories,id'],
-            'brand' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:255'],
+            'wholesale_price' => ['nullable', 'numeric', 'min:0'],
+
+            'allow_wholesale' => ['required', 'boolean'],
+
+            'unit' => ['nullable', 'string', 'max:50'],
             'units_per_packet' => ['nullable', 'integer', 'min:1'],
             'packets_per_carton' => ['nullable', 'integer', 'min:1'],
+            'min_stock_level' => ['nullable', 'integer', 'min:0'],
+
+            'status' => ['required', 'boolean'],
+
+            'category_ids' => ['required', 'array', 'min:1'],
+            'category_ids.*' => ['uuid', 'exists:categories,id'],
+
+            'store_id' => ['uuid', 'exists:stores,id'],
+
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'description' => ['nullable', 'string', 'max:1000'],
         ];
     }
 
@@ -51,10 +71,23 @@ class UpdateProductRequest extends FormRequest
     {
         return [
             'name.unique' => 'This product name already exists.',
+            'barcode.unique' => 'This barcode is already assigned to another product.',
             'category_ids.required' => 'Please select at least one category.',
-            'store_id.exists' => 'Selected store not found.',
+            'allow_wholesale.required' => 'Please specify if wholesale pricing is allowed.',
+            'status.required' => 'Please specify the product status.',
             'units_per_packet.min' => 'Units per packet must be at least 1.',
             'packets_per_carton.min' => 'Packets per carton must be at least 1.',
         ];
+    }
+
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'allow_wholesale' => filter_var($this->allow_wholesale, FILTER_VALIDATE_BOOLEAN),
+            'status' => filter_var($this->status, FILTER_VALIDATE_BOOLEAN),
+        ]);
     }
 }

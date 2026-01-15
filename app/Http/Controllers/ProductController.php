@@ -3,8 +3,12 @@
 namespace App\Http\Controllers;
 
 use Inertia\Inertia;
+use App\Models\Store;
 use App\Models\Product;
+use App\Models\Category;
 use Illuminate\Support\Facades\Log;
+use App\Http\Resources\ProductResource;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 
@@ -15,86 +19,65 @@ class ProductController extends Controller
      */
     public function index()
     {
-        $query = Product::with(['store', 'categories']);
+        try {
+            $query = Product::query()
+                ->with(['store', 'categories', 'creator', 'updator']);
 
-        if ($search = request('search')) {
-            $query->where('name', 'like', "%{$search}%")
-                ->orWhere('brand', 'like', "%{$search}%")
-                ->orWhereHas('store', fn($q) => $q->where('name', 'like', "%{$search}%"));
-        }
+            if ($search = request('search')) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('brand', 'like', "%{$search}%")
+                        ->orWhere('barcode', 'like', "%{$search}%")
+                        ->orWhereHas(
+                            'store',
+                            fn($q) =>
+                            $q->where('name', 'like', "%{$search}%")
+                        );
+                });
+            }
 
-        $products = $query->latest()
-            ->paginate(15)
-            ->withQueryString()
-            ->through(fn($product) => [
-                'id' => $product->id,
-                'name' => $product->name,
-                'cost' => $product->cost,
-                'wholesale_price' => $product->wholesale_price,
-                'retail_price' => $product->retail_price,
-                'quantity' => $product->quantity,
-                'brand' => $product->brand,
-                'description' => $product->description,
-                'units_per_packet' => $product->units_per_packet,
-                'packets_per_carton' => $product->packets_per_carton,
-                'store' => $product->store
-                    ? [
-                        'id' => $product->store->id,
-                        'name' => $product->store->name,
-                    ]
-                    : null,
-                'categories' => $product->categories->map(fn($c) => [
-                    'id' => $c->id,
-                    'name' => $c->name,
-                ]),
-                'created_at' => $product->created_at,
-                'updated_at' => $product->updated_at,
+            if ($category = request('category')) {
+                if ($category !== 'all') {
+                    $query->whereHas(
+                        'categories',
+                        fn($q) =>
+                        $q->where('name', $category)
+                    );
+                }
+            }
+
+            if (request()->filled('status') && request('status') !== 'all') {
+                $query->where(
+                    'status',
+                    filter_var(request('status'), FILTER_VALIDATE_BOOLEAN)
+                );
+            }
+
+            $data = $query
+                ->latest()
+                ->paginate(10)
+                ->withQueryString();
+
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'products' => ProductResource::collection($query->get())
+                ]);
+            }
+
+            return Inertia::render('products/Index', [
+                'data' => ProductResource::collection($data),
+                'categories' => Category::all(),
+                'stores' => Store::all(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error retrieving products', [
+                'message' => $e->getMessage(),
             ]);
 
-        if (request()->wantsJson()) {
-            return response()->json(['products' => $products]);
+            return back()->withErrors([
+                'message' => 'Error retrieving products.',
+            ]);
         }
-
-        return Inertia::render('products/Index', [
-            'products' => $products,
-        ]);
-    }
-
-    public function list()
-    {
-        $query = Product::with(['store', 'categories'])->latest();
-
-        if ($storeId = request('store_id')) {
-            $query->where('store_id', $storeId);
-        }
-
-        $products = $query->get()->map(fn($product) => [
-            'id' => $product->id,
-            'name' => $product->name,
-            'cost' => $product->cost,
-            'retail_price' => $product->retail_price,
-            'wholesale_price' => $product->wholesale_price,
-            'quantity' => $product->quantity,
-            'brand' => $product->brand,
-            'description' => $product->description,
-            'store' => $product->store
-                ? [
-                    'id' => $product->store->id,
-                    'name' => $product->store->name,
-                ]
-                : null,
-            'categories' => $product->categories->map(fn($c) => [
-                'id' => $c->id,
-                'name' => $c->name,
-            ]),
-            'categories_string' => $product->categories->pluck('name')->join(', '),
-            'units_per_packet' => $product->units_per_packet,
-            'packets_per_carton' => $product->packets_per_carton,
-            'created_at' => $product->created_at,
-            'updated_at' => $product->updated_at,
-        ]);
-
-        return response()->json(['products' => $products]);
     }
 
     /**
@@ -105,33 +88,32 @@ class ProductController extends Controller
         try {
             $data = $request->validated();
 
-            $product = Product::create($data);
+            $data['creator_id'] = auth()->id();
 
-            if (isset($data['category_ids'])) {
-                $product->categories()->sync($data['category_ids']);
+            if ($request->hasFile('image')) {
+                $data['image'] = $request->file('image')->store('products', 'public');
             }
 
-            return redirect()->back()->with([
+            $categoryIds = $data['category_ids'];
+            unset($data['category_ids']);
+
+            $product = Product::create($data);
+
+            $product->categories()->sync($categoryIds);
+
+            return back()->with([
                 'status' => true,
                 'message' => 'Product added successfully',
-                'product_id' => $product->id
+                'product_id' => $product->id,
             ]);
-        } catch (\Exception $e) {
-            Log::error('Product store error: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('Error adding product: ' . $e->getMessage());
 
-            return redirect()->back()->withErrors([
+            return back()->withErrors([
                 'status' => false,
-                'errors' => 'Something went wrong while adding the product.'
+                'message' => 'Error adding product.'
             ]);
         }
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Product $product)
-    {
-        //
     }
 
     /**
@@ -142,25 +124,36 @@ class ProductController extends Controller
         try {
             $data = $request->validated();
 
-            $product->update($data);
+            $data['updator_id'] = auth()->id();
 
-            if (isset($data['category_ids'])) {
-                $product->categories()->sync($data['category_ids']);
+            if ($request->hasFile('image')) {
+                if ($product->image) {
+                    Storage::disk('public')->delete($product->image);
+                }
+
+                $data['image'] = $request->file('image')->store('products', 'public');
             }
 
-            $product->refresh()->load('categories');
+            $categoryIds = $data['category_ids'];
+            unset($data['category_ids']);
 
-            return redirect()->back()->with([
+            $product->update($data);
+
+            $product->categories()->sync($categoryIds);
+
+            $product->refresh()->load(['categories', 'creator']);
+
+            return back()->with([
                 'status' => true,
                 'message' => 'Product updated successfully',
-                'product' => $product
+                'product' => $product,
             ]);
-        } catch (\Exception $e) {
-            Log::error('Product update error: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('Error updating product: ' . $e->getMessage());
 
-            return redirect()->back()->withErrors([
+            return back()->withErrors([
                 'status' => false,
-                'errors' => 'Something went wrong while updating the product.'
+                'message' => 'Error updating product.'
             ]);
         }
     }
@@ -171,16 +164,25 @@ class ProductController extends Controller
     public function destroy(Product $product)
     {
         try {
+            if ($product->image && Storage::disk('public')->exists($product->image)) {
+                Storage::disk('public')->delete($product->image);
+            }
+
             $product->delete();
 
-            return response()->json([
+            return back()->with([
                 'status' => true,
                 'message' => 'Product deleted successfully',
             ], 200);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            Log::error('Error deleting product', [
+                'product_id' => $product->id,
+                'error' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'status' => false,
-                'message' => $e->getMessage(),
+                'message' => 'Error deleting product',
             ], 500);
         }
     }

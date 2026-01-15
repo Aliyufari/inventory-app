@@ -11,7 +11,7 @@ const props = defineProps<{
   <main
     data-slot="sidebar-off"
     :class="cn(
-      'bg-background relative flex w-full flex-col overflow-x-hidden flex-1',
+      'bg-background relative flex w-full flex-col flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide',
       'md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2',
       props.class,
     )"

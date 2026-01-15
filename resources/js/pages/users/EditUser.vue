@@ -1,209 +1,124 @@
 <script setup lang="ts">
-import axios from 'axios'
+import { computed, watch, onMounted } from 'vue'
 import { useForm } from '@inertiajs/vue3'
-import { onMounted, ref, watch } from 'vue'
 import { useUser } from '@/stores/users'
+import { toast } from 'vue-sonner'
 
 // Components
+import Modal from '@/components/AppModal.vue'
 import InputError from '@/components/InputError.vue'
+import MultiSelect from '@/components/ui/multiselect/MultiSelect.vue'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select } from '@/components/ui/select'
-import { Role, Store, User } from '@/types'
-import MultiSelect from '@/components/ui/multiselect/MultiSelect.vue'
+import Select from '@/components/ui/select/Select.vue'
+import { LoaderCircle } from 'lucide-vue-next'
+
+// Define Props
+const props = defineProps<{
+  user: any 
+}>()
 
 const usersStore = useUser()
-const passwordInput = ref<HTMLInputElement | null>(null)
-const roles = ref<{ label: string; value: string }[]>([])
-const stores = ref<{ label: string; value: string }[]>([])
+const emit = defineEmits(['updated'])
 
-interface Props {
-  user?: User | unknown
-}
+const roles = computed(() => usersStore.allRoles)
+const stores = computed(() => usersStore.allStores)
 
-const props = defineProps<Props>()
-
-// Form
 const form = useForm({
-  name: '',
+  _method: 'PUT',
   email: '',
-  gender: '',
-  status: '',
-  password: '',
   role_id: '',
   store_ids: [] as string[],
+  gender: '',
+  status: true,
 })
 
-// Sync props.user to form
-watch(
-  () => props.user,
-  (user) => {
-    if (user) {
-      form.name = user.name
-      form.email = user.email
-      form.gender = user.gender
-      form.status = user.status
-      form.role_id = user.role?.id
-      form.store_ids = user.stores?.map((s: Store) => s.id) ?? []
-    }
+const showEditModal = computed({
+  get: () => usersStore.modalType === 'edit',
+  set: (val) => {
+    if (!val) usersStore.closeModal()
   },
-  { immediate: true }
-)
-
-// Fetch roles and stores
-onMounted(async () => {
-  try {
-    const [roleRes, storeRes] = await Promise.all([
-      axios.get(route('roles.index')),
-      axios.get(route('stores.api')),
-    ])
-
-    roles.value = roleRes.data.roles.map((role: Role) => ({
-      label: role.name.charAt(0).toUpperCase() + role.name.slice(1),
-      value: role.id,
-    }))
-
-    stores.value = storeRes.data.stores.map((store: Store) => ({
-      label: store.name.charAt(0).toUpperCase() + store.name.slice(1),
-      value: store.id,
-    }))
-  } catch (error) {
-    console.error('Error fetching roles or stores:', error)
-  }
 })
 
-// Update user
-const updateUser = (e: Event) => {
-  e.preventDefault()
+const fillForm = () => {
+  if (props.user) {
+    form.email = props.user.email || ''
+    form.role_id = props.user.role.id?.toString() || ''
+    form.gender = props.user.gender || ''
+    form.status = props.user.status === 1 || props.user.status === true
+    form.store_ids = (props.user.stores || []).map(c => String(c.id))
+  }
+}
 
-  form.put(route('users.update', usersStore.selectedUser?.id), {
-    preserveScroll: true,
-    onSuccess: (page) => {
-      if (page.props?.user) {
-        const index = usersStore.users.findIndex(u => u.id === page.props.user.id)
-        if (index !== -1) {
-          usersStore.users[index] = page.props.user
-        } else {
-          usersStore.users.unshift(page.props.user)
-        }
-      } else {
-        usersStore.fetchUsers()
-      }
-      usersStore.closeModal()
-    },
-    onError: () => passwordInput.value?.focus(),
-    onFinish: () => form.reset(),
-  })
+onMounted(fillForm)
+watch(() => props.user, fillForm, { deep: true })
+
+const update = async () => {
+  if (form.processing) return
+
+  try {
+    await usersStore.updateUser(props.user.id, form)
+    emit('updated')
+  } catch (error) {
+    console.error('Update failed:', error)
+  }
 }
 </script>
 
 <template>
-  <div class="space-y-6">
-    <Dialog
-      :open="usersStore.modalType === 'edit'"
-      @update:open="val => { if (!val) usersStore.closeModal() }"
-    >
-      <!-- ✅ Wider responsive modal -->
-      <DialogContent class="!max-w-none w-[95vw] sm:w-[80vw] md:w-[60vw] lg:w-[50vw] xl:w-[45vw]">
-        <form class="space-y-6" @submit="updateUser">
-          <DialogHeader class="space-y-3">
-            <DialogTitle>Edit User</DialogTitle>
-            <DialogDescription>
-              Update the details of the selected user.
-            </DialogDescription>
-          </DialogHeader>
+  <Modal v-model="showEditModal" title="Edit User" width="500px">
+    <form class="space-y-5" @submit.prevent="update">
+      <div class="grid gap-2">
+        <Label for="edit-email">Email</Label>
+        <Input id="edit-email" type="email" v-model="form.email" placeholder="Enter email" />
+        <InputError :message="form.errors.email" />
+      </div>
 
-          <!-- Email -->
-          <div class="grid gap-2">
-            <Label for="email">Email</Label>
-            <Input id="email" type="email" v-model="form.email" placeholder="Email" />
-            <InputError :message="form.errors.email" />
+      <div class="grid gap-2">
+        <Label for="edit-gender">Gender</Label>
+        <Select 
+          id="edit-gender" 
+          v-model="form.gender" 
+          :options="[
+            { label: 'Female', value: 'female' },
+            { label: 'Male', value: 'male' }
+          ]" 
+          placeholder="Select gender"
+        />
+        <InputError :message="form.errors.gender" />
+      </div>
+
+      <div class="grid gap-2">
+        <Label for="edit-role">Role</Label>
+        <Select id="edit-role" v-model="form.role_id" :options="roles" placeholder="Select role" />
+        <InputError :message="form.errors.role_id" />
+      </div>
+
+      <div class="grid gap-2">
+        <Label for="edit-stores">Assigned Stores</Label>
+        <MultiSelect v-model="form.store_ids" :options="stores" placeholder="Select stores" />
+        <InputError :message="form.errors.store_ids" />
+      </div>
+
+      <div class="flex gap-4 items-center">
+        <label class="inline-flex items-center cursor-pointer">
+          <input type="checkbox" v-model="form.status" class="sr-only peer" />
+          <div class="w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-blue-600 relative transition">
+            <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow transform transition peer-checked:translate-x-5"></div>
           </div>
+          <span class="ml-3 text-sm font-medium text-gray-700 select-none">Active Account</span>
+        </label>
+      </div>
+    </form>
 
-          <!-- Role and Store(s) -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="grid gap-2">
-              <Label for="role">Role</Label>
-              <Select
-                id="role"
-                v-model="form.role_id"
-                placeholder="Select role"
-                :options="roles"
-              />
-              <InputError :message="form.errors.role_id" />
-            </div>
-
-            <div class="grid gap-2">
-              <Label for="store_ids">Store(s)</Label>
-              <MultiSelect
-                id="store_ids"
-                placeholder="Select store(s)"
-                v-model="form.store_ids"
-                :options="stores"
-              />
-              <InputError :message="form.errors.store_ids" />
-            </div>
-          </div>
-
-          <!-- Gender -->
-          <div class="grid gap-2">
-            <Label for="gender">Gender</Label>
-            <Select
-              id="gender"
-              placeholder="Select gender"
-              v-model="form.gender"
-              :options="[
-                { label: 'Female', value: 'female' },
-                { label: 'Male', value: 'male' }
-              ]"
-            />
-            <InputError :message="form.errors.gender" />
-          </div>
-
-          <!-- Status -->
-          <div class="grid gap-2">
-            <Label for="status">Status</Label>
-            <Select
-              id="status"
-              placeholder="Select status"
-              v-model="form.status"
-              :options="[
-                { label: 'Active', value: 'active' },
-                { label: 'Inactive', value: 'inactive' }
-              ]"
-            />
-            <InputError :message="form.errors.status" />
-          </div>
-
-          <!-- Password (optional reset/change) -->
-          <!-- <div class="grid gap-2">
-            <Label for="password">Password (optional)</Label>
-            <Input
-              id="password"
-              type="password"
-              v-model="form.password"
-              placeholder="Enter new password"
-              ref="passwordInput"
-            />
-            <InputError :message="form.errors.password" />
-          </div> -->
-
-          <!-- Actions -->
-          <DialogFooter class="gap-2">
-            <Button type="button" variant="secondary" @click="usersStore.closeModal()">Cancel</Button>
-            <Button type="submit" :disabled="form.processing">Update</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  </div>
+    <template #footer>
+      <div class="flex justify-end gap-3">
+        <Button @click="update" :disabled="form.processing">
+          <LoaderCircle v-if="form.processing" class="mr-2 h-4 w-4 animate-spin" />
+          Upadate
+        </Button>
+      </div>
+    </template>
+  </Modal>
 </template>

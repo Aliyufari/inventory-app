@@ -526,7 +526,7 @@ const submit = async (e: Event) => {
 import { ref, computed, watch, onUnmounted, nextTick } from "vue"
 import { useForm } from "@inertiajs/vue3"
 import axios from "axios"
-import { useInventory } from "@/stores/inventory"
+import { useInventory } from "@/stores/invoice"
 
 // UI Components
 import { Button } from "@/components/ui/button"

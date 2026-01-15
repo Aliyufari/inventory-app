@@ -50,7 +50,7 @@ const updateProduct = (e: Event) => {
       if (page.props?.product) {
         productStore.updateLocal(page.props.product)
       } else {
-        productStore.fetchProducts()
+        productStore.getProducts()
       }
       productStore.closeModal()
     },

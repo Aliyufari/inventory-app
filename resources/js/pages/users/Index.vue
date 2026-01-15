@@ -1,56 +1,37 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue"
-import { Head, useForm, usePage } from "@inertiajs/vue3"
-import AppLayout from "@/layouts/AppLayout.vue"
-import UsersLayout from "@/layouts/users/Layout.vue"
-import { type BreadcrumbItem, type SharedData, type User } from "@/types"
-import ComponentCard from "@/components/ui/card/ComponentCard.vue"
-import UsersTable from "@/components/ui/table/UsersTable.vue"
-import AddUser from "@/pages/users/AddUser.vue"
-import EditUser from "@/pages/users/EditUser.vue"
-import ViewUser from "@/pages/users/ViewUser.vue"
-import DeleteUser from "@/pages/users/DeleteUser.vue"
-import { Button } from "@/components/ui/button"
-import { useUser } from "@/stores/users"
-import { UserPlus } from "lucide-vue-next"
-import Pagination from "@/pages/components/Pagination.vue"
-import SearchInput from "@/pages/components/SeachInput.vue"
+import { onMounted, watch } from 'vue'
+import { Head } from '@inertiajs/vue3'
+import AppLayout from '@/layouts/AppLayout.vue'
+import UsersLayout from '@/layouts/users/Layout.vue'
+import { type BreadcrumbItem } from '@/types'
+import AddUser from '@/pages/users/AddUser.vue'
+import EditUser from '@/pages/users/EditUser.vue'
+import ViewUser from '@/pages/users/ViewUser.vue'
+import DeleteUser from '@/pages/users/DeleteUser.vue'
+import { Button } from '@/components/ui/button'
+import { useUser } from '@/stores/users'
+import { UserPlus } from 'lucide-vue-next'
+import UsersTable from './UsersTable.vue'
 
-interface Props {
-  mustVerifyEmail: boolean
-  status?: string
-  users?: unknown[]
-}
+const props = defineProps<{
+  data: any
+  roles: any
+  stores: any
+}>()
 
-defineProps<Props>()
-
-const breadcrumbs: BreadcrumbItem[] = [{ title: "Manage Users", href: "/users" }]
-
-const page = usePage<SharedData>()
-const authUser = page.props.auth.user as User
-
-const form = useForm({
-  name: authUser.name,
-  email: authUser.email,
-})
+const breadcrumbs: BreadcrumbItem[] = [
+  { title: 'Manage Users', href: '/users' },
+]
 
 const usersStore = useUser()
 
-const users = computed(() => usersStore.users)
-
-const submit = () => {
-  form.patch(route("profile.update"), { preserveScroll: true })
-}
-
 onMounted(() => {
-  if (!usersStore.users.length) {
-    usersStore.fetchUsers()
-  }
+  usersStore.setUsers(props.data, props.roles, props.stores)
 })
 
-const handleSearch = () => {
-  usersStore.fetchUsers(1) 
-}
+watch(() => props.data, (newData) => {
+  usersStore.setUsers(newData, props.roles, props.stores)
+}, { deep: true })
 </script>
 
 <template>
@@ -59,58 +40,38 @@ const handleSearch = () => {
 
     <UsersLayout>
       <template #button>
-        <Button @click="usersStore.openModal('add')">
-          <UserPlus class="mr-2" /> Add User
+        <Button @click="usersStore.openAdd()">
+          <UserPlus class="mr-2 h-4 w-4" />
+          Add User
         </Button>
       </template>
 
       <div class="space-y-5 sm:space-y-6">
-        <ComponentCard>
-          <!-- 🔍 Search input above table -->
-          <div class="mb-4">
-            <SearchInput
-              v-model="usersStore.search"
-              placeholder="Search user..."
-              @search="handleSearch"
-            />
-          </div>
-
-          <!-- Users Table -->
-          <UsersTable
-            :data="users"
-            @edit="usersStore.openModal('edit', $event)"
-            @view="usersStore.openModal('view', $event)"
-            @delete="usersStore.openModal('delete', $event)"
-          />
-
-          <!-- Pagination -->
-          <Pagination
-            v-if="usersStore.pagination"
-            :links="usersStore.pagination.links"
-            :meta="usersStore.pagination.meta"
-            :onPageChange="page => usersStore.fetchUsers(page)"
-          />
-        </ComponentCard>
+        <UsersTable />
       </div>
 
-      <!-- Modals -->
+      <!-- MODALS -->
       <AddUser
         v-if="usersStore.modalType === 'add'"
-        @saved="usersStore.fetchUsers()"
+        @saved="usersStore.closeModal"
       />
+
       <EditUser
         v-if="usersStore.modalType === 'edit'"
         :user="usersStore.selectedUser"
-        @updated="usersStore.fetchUsers()"
+        @updated="usersStore.closeModal"
       />
+
       <ViewUser
         v-if="usersStore.modalType === 'view'"
         :user="usersStore.selectedUser"
+        @close="usersStore.closeModal"
       />
+
       <DeleteUser
         v-if="usersStore.modalType === 'delete'"
         :user="usersStore.selectedUser"
-        @deleted="usersStore.fetchUsers()"
+        @deleted="usersStore.closeModal"
       />
     </UsersLayout>
   </AppLayout>

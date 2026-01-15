@@ -2,13 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Role;
 use App\Models\User;
 use Inertia\Inertia;
+use App\Models\Store;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
+use App\Http\Resources\UserResource;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Auth\Events\Registered;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
-use Illuminate\Http\JsonResponse;
 
 class UserController extends Controller
 {
@@ -17,49 +21,59 @@ class UserController extends Controller
      */
     public function index()
     {
-        $query = User::with(['role', 'stores']);
+        try {
+            $query = User::with(['role', 'stores']);
 
-        // Handle search
-        if ($search = request('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhereHas('role', fn($r) => $r->where('name', 'like', "%{$search}%"))
-                    ->orWhereHas('stores', fn($s) => $s->where('name', 'like', "%{$search}%"));
-            });
-        }
+            // Exclude super, owner, and self
+            $query->whereDoesntHave('role', function ($q) {
+                $q->whereIn('name', ['super', 'owner']);
+            })
+                ->where('id', '!=', auth()->id());
 
-        $users = $query->latest()
-            ->paginate(15)
-            ->withQueryString()
-            ->through(fn($user) => [
-                'id' => $user->id,
-                'avatar' => $user->avatar,
-                'name' => $user->name,
-                'email' => $user->email,
-                'gender' => $user->gender,
-                'status' => $user->status,
-                'role' => $user->role ? [
-                    'id' => $user->role->id,
-                    'name' => $user->role->name,
-                ] : null,
-                'stores' => $user->stores->map(fn($store) => [
-                    'id' => $store->id,
-                    'name' => $store->name,
-                ]),
-                'created_at' => $user->created_at->toDateTimeString(),
-                'updated_at' => $user->updated_at->toDateTimeString(),
+            // Search filter
+            if ($search = request('search')) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhereHas('role', fn($r) => $r->where('name', 'like', "%{$search}%"))
+                        ->orWhereHas('stores', fn($s) => $s->where('name', 'like', "%{$search}%"));
+                });
+            }
+
+            // Role filter
+            if ($role = request('role')) {
+                if ($role !== 'all') {
+                    $query->whereHas('role', fn($r) => $r->where('id', $role));
+                }
+            }
+
+            // Status filter
+            if (request()->filled('status') && request('status') !== 'all') {
+                $query->where('status', filter_var(request('status'), FILTER_VALIDATE_BOOLEAN));
+            }
+
+            $users = $query->latest()->paginate(15)->withQueryString();
+
+            // API response
+            if (request()->wantsJson()) {
+                return UserResource::collection($users);
+            }
+
+            // Inertia response
+            return Inertia::render('users/Index', [
+                'data' => UserResource::collection($users),
+                'roles' => Role::all(),
+                'stores' => Store::all(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error retrieving users', [
+                'message' => $e->getMessage(),
             ]);
 
-        // Handle API response
-        if (request()->wantsJson()) {
-            return response()->json(['users' => $users]);
+            return back()->withErrors([
+                'message' => 'Error retrieving users.',
+            ]);
         }
-
-        // Inertia response
-        return Inertia::render('users/Index', [
-            'users' => $users,
-        ]);
     }
 
     /**
@@ -69,29 +83,21 @@ class UserController extends Controller
     {
         try {
             $data = $request->validated();
-
-            // Hash password
             $data['password'] = Hash::make($request->password);
-
-            // Create the user
             $user = User::create($data);
 
-            // Attach selected stores (if any)
             if ($request->filled('store_ids')) {
                 $user->stores()->attach($request->store_ids);
             }
 
-            // Fire Registered event
             event(new Registered($user));
 
-            // Respond success
-            return redirect()->back()->with([
+            return back()->with([
                 'status' => true,
                 'message' => 'User added successfully',
             ]);
-        } catch (\Exception $e) {
-            // Respond error
-            return redirect()->back()->withErrors([
+        } catch (\Throwable $e) {
+            return back()->withErrors([
                 'status' => false,
                 'errors' => $e->getMessage(),
             ]);
@@ -104,13 +110,13 @@ class UserController extends Controller
     public function show(User $user)
     {
         try {
-            return redirect()->back()->with([
+            return back()->with([
                 'status' => true,
                 'message' => 'User fetched successfully',
                 'user' => $user
             ]);
-        } catch (\Exception $e) {
-            return redirect()->back()->withErrors([
+        } catch (\Throwable $e) {
+            return back()->withErrors([
                 'status' => false,
                 'errors' => $e->getMessage()
             ]);
@@ -138,12 +144,12 @@ class UserController extends Controller
 
             $user->refresh();
 
-            return redirect()->back()->with([
+            return back()->with([
                 'status' => true,
                 'message' => 'User updated successfully',
             ]);
-        } catch (\Exception $e) {
-            return redirect()->back()->withErrors([
+        } catch (\Throwable $e) {
+            return back()->withErrors([
                 'status' => false,
                 'errors' => $e->getMessage(),
             ]);
@@ -158,11 +164,11 @@ class UserController extends Controller
         try {
             $user->delete();
 
-            return response()->json([
+            return back()->with([
                 'status' => true,
                 'message' => 'User deleted successfully',
             ], 200);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return response()->json([
                 'status' => false,
                 'message' => $e->getMessage(),

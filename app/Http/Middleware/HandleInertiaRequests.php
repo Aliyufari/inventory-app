@@ -50,7 +50,7 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => fn() =>
                 $request->user()
-                    ? $request->user()->load('stores')
+                    ? $request->user()->load('stores', 'role')
                     : null,
             ],
 

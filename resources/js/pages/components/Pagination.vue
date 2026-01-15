@@ -1,105 +1,148 @@
 <script setup lang="ts">
-import { Button } from '@/components/ui/button'
+import { computed, ref, watch, getCurrentInstance } from 'vue';
+import { router } from '@inertiajs/vue3';
 
+/**
+ * Pagination link type (matches Laravel / Inertia meta.links)
+ */
 interface PaginationLink {
-  url: string | null
-  label: string
-  active: boolean
-}
-
-interface PaginationMeta {
-  current_page: number
-  from: number
-  to: number
-  total: number
-  last_page: number
-}
-
-interface Props {
-  links: PaginationLink[]
-  meta?: PaginationMeta
-  /**
-   * Callback to fetch a specific page
-   */
-  onPageChange: (page: number) => void
-}
-
-const props = defineProps<Props>()
-
-/**
- * Extract page number from Laravel pagination URL
- */
-const getPageNumber = (url: string | null): number | null => {
-  if (!url) return null
-  const match = url.match(/page=(\d+)/)
-  return match ? parseInt(match[1], 10) : 1
+  url: string | null;
+  label: string;
+  active: boolean;
 }
 
 /**
- * Format pagination links with ellipsis logic
+ * Props
  */
-const paginationRange = (links: PaginationLink[]) => {
-  const totalPages = links.length
-  const currentPageIndex = links.findIndex(link => link.active)
-  const maxVisiblePages = 5
-
-  if (totalPages <= maxVisiblePages) return links
-
-  const startPages = links.slice(0, 2)
-  const endPages = links.slice(-2)
-  let middlePages: PaginationLink[] = []
-
-  if (currentPageIndex <= 2) {
-    middlePages = links.slice(2, currentPageIndex + 3)
-  } else if (currentPageIndex >= totalPages - 3) {
-    middlePages = links.slice(currentPageIndex - 2, totalPages - 2)
-  } else {
-    middlePages = links.slice(currentPageIndex - 1, currentPageIndex + 2)
+const props = withDefaults(
+  defineProps<{
+    links?: PaginationLink[];
+    currentPage?: number;
+    totalPages?: number;
+  }>(),
+  {
+    links: () => [],
+    currentPage: 1,
+    totalPages: 1
   }
+);
 
-  const leadingEllipsis =
-    currentPageIndex > 2 ? [{ label: '...', url: null, active: false }] : []
-  const trailingEllipsis =
-    currentPageIndex < totalPages - 3 ? [{ label: '...', url: null, active: false }] : []
+/**
+ * Emits
+ */
+const emit = defineEmits<{
+  (e: 'change', page: number): void;
+}>();
 
-  return [
-    ...startPages,
-    ...leadingEllipsis,
-    ...middlePages,
-    ...trailingEllipsis,
-    ...endPages,
-  ].filter((page, index, array) => index === 0 || page.label !== array[index - 1].label)
+/**
+ * Detect if parent listens for `change`
+ */
+const instance = getCurrentInstance();
+const hasChangeListener = computed(() => !!instance?.vnode.props?.onChange);
+
+/**
+ * Internal page state
+ */
+const internalPage = ref<number>(props.currentPage);
+watch(() => props.currentPage, (val) => {
+  internalPage.value = val;
+});
+
+/**
+ * Backend pagination detection
+ */
+const hasBackendLinks = computed(() => props.links.length > 0 && 'url' in props.links[0]);
+const currentPageForRender = computed(() => internalPage.value);
+
+/**
+ * Extract page number from Inertia URL
+ */
+function extractPage(url?: string | null): number {
+  if (!url) return 1;
+  try {
+    const params = new URL(url, window.location.origin).searchParams;
+    return parseInt(params.get('page') || '1', 10);
+  } catch {
+    return 1;
+  }
+}
+
+/**
+ * Handle page click
+ */
+function handleClick(page?: number, url?: string | null): void {
+  const newPage = url ? extractPage(url) : page ?? internalPage.value;
+
+  if (hasChangeListener.value) {
+    emit('change', newPage);
+    internalPage.value = newPage;
+  } else if (hasBackendLinks.value && url) {
+    router.get(url, {}, { 
+      preserveState: true,
+      preserveScroll: true
+    });
+  } else {
+    internalPage.value = newPage;
+  }
 }
 </script>
 
 <template>
-  <div v-if="links.length > 3" class="mt-6 flex flex-col items-center gap-3">
-    <!-- Info line -->
-    <p v-if="meta" class="text-sm text-gray-600">
-      Showing <span class="font-medium">{{ meta.from }}</span>
-      to <span class="font-medium">{{ meta.to }}</span>
-      of <span class="font-medium">{{ meta.total }}</span> results
-    </p>
+  <div
+    v-if="(hasBackendLinks && links.filter(l => l.url).length > 1) || (!hasBackendLinks && totalPages > 1)" 
+    class="flex flex-wrap gap-1 mt-4"
+  >
 
-    <!-- Pagination buttons -->
-    <nav class="flex items-center space-x-1" aria-label="Pagination">
-      <template v-for="(link, index) in paginationRange(links)" :key="index">
-        <!-- Active & Clickable Links -->
-        <Button
-          v-if="link.url"
-          @click="props.onPageChange(getPageNumber(link.url) || 1)"
+    <!-- Backend Links -->
+    <template v-if="hasBackendLinks">
+      <template v-for="(link, index) in links" :key="index">
+        <button
           v-html="link.label"
-          :variant="link.active ? 'default' : 'outline'"
-          size="sm"
-        />
-
-        <!-- Disabled or Ellipsis -->
-        <span
-          v-else
-          v-html="link.label"
-          class="px-3 py-1 text-sm text-gray-400 cursor-default"
+          class="px-3 py-1 border rounded text-sm transition-colors"
+          :class="{
+            'bg-primary text-white border-primary': link.active,
+            'text-gray-500 cursor-not-allowed border-gray-300': !link.url,
+            'hover:bg-primary hover:text-white hover:border-primary cursor-pointer': link.url && !link.active
+          }"
+          :disabled="!link.url"
+          @click="link.url ? handleClick(undefined, link.url) : null"
         />
       </template>
-    </nav>
+    </template>
+
+    <!-- Local Numeric Pagination -->
+    <template v-else>
+      <button
+        @click="handleClick(currentPageForRender - 1)"
+        :disabled="currentPageForRender === 1"
+        class="px-3 py-1 border rounded text-sm transition-colors"
+        :class="{
+          'text-gray-500 cursor-not-allowed border-gray-300': currentPageForRender === 1,
+          'hover:bg-gray-200 hover:text-gray-600 border-gray-300': currentPageForRender !== 1
+        }"
+      >&#171; Previous</button>
+
+      <button
+        v-for="page in totalPages"
+        :key="page"
+        @click="handleClick(page)"
+        class="px-3 py-1 border rounded text-sm transition-colors"
+        :class="{
+          'bg-primary text-white border-primary': currentPageForRender === page,
+          'text-gray-700 border-gray-300 hover:bg-gray-200 hover:text-gray-600': currentPageForRender !== page
+        }"
+      >{{ page }}</button>
+
+      <button
+        @click="handleClick(currentPageForRender + 1)"
+        :disabled="currentPageForRender === totalPages"
+        class="px-3 py-1 border rounded text-sm transition-colors"
+        :class="{
+          'text-gray-500 cursor-not-allowed border-gray-300': currentPageForRender === totalPages,
+          'hover:bg-gray-200 hover:text-gray-600 border-gray-300': currentPageForRender !== totalPages
+        }"
+      >Next &#187;</button>
+    </template>
+
   </div>
 </template>

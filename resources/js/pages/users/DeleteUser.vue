@@ -1,68 +1,54 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { ref } from 'vue'
+import { useUser } from '@/stores/users'
+import { toast } from 'vue-sonner'
+import Prompt from '@/components/ui/Prompt.vue'
 
-import { useUser } from "@/stores/users";
+const userStore = useUser()
+const emit = defineEmits<{
+  (e: 'deleted'): void
+}>()
 
-const userStore = useUser();
-const loading = ref(false);
-const error = ref<string | null>(null);
+const loading = ref(false)
+const showPrompt = ref(true)
 
-const handleDelete = async (e: Event) => {
-  e.preventDefault();
-  if (!userStore.selectedUser?.id) {
-    error.value = "No user selected.";
-    return;
+const handleDelete = async () => {
+  const user = userStore.selectedUser
+  if (!user?.id) {
+    toast.error('No user selected')
+    return
   }
 
-  loading.value = true;
-  error.value = null;
-
+  loading.value = true
   try {
-    await userStore.deleteUser(userStore.selectedUser.id);
+    await userStore.deleteUser(user.id)
+    toast.success('User deleted successfully')
+    emit('deleted')
+    showPrompt.value = false
   } catch (err: any) {
-    console.error("Error deleting user:", err);
-    error.value = "Failed to delete user.";
+    console.error('Delete failed:', err)
+    toast.error('Failed to delete user')
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 
-const closeModal = () => {
-  error.value = null;
-  userStore.closeModal();
-};
+const closePrompt = () => {
+  showPrompt.value = false
+  userStore.closeModal()
+}
 </script>
 
 <template>
-  <Dialog
-    :open="userStore.modalType === 'delete'"
-    @update:open="val => { if (!val) userStore.closeModal() }"
-  >
-    <DialogContent>
-      <form @submit="handleDelete" class="space-y-6">
-        <DialogHeader>
-          <DialogTitle>Are you sure you want to delete this user?</DialogTitle>
-          <DialogDescription>This action cannot be reverted.</DialogDescription>
-        </DialogHeader>
-
-        <DialogFooter class="gap-2">
-          <Button type="button" variant="secondary" @click="closeModal">
-            Cancel
-          </Button>
-          <Button type="submit" variant="destructive" :disabled="loading">
-            Delete
-          </Button>
-        </DialogFooter>
-      </form>
-    </DialogContent>
-  </Dialog>
+  <Prompt
+    v-model="showPrompt"
+    title="Delete User"
+    :message="`Are you sure you want to delete '${userStore.selectedUser?.name}'?`"
+    confirmText="Delete"
+    cancelText="Cancel"
+    danger
+    :loading="loading"
+    @confirm="handleDelete"
+    @cancel="closePrompt"
+  />
 </template>

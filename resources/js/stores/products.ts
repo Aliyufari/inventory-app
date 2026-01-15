@@ -1,116 +1,130 @@
 import { defineStore } from 'pinia'
-import axios from 'axios'
+import { router, usePage } from '@inertiajs/vue3'
 import type { Product } from '@/types'
+import { toast } from 'vue-sonner'
+
+type PaginationMeta = {
+  current_page: number
+  last_page: number
+  links: any[]
+}
 
 export const useProduct = defineStore('products', {
   state: () => ({
     products: [] as Product[],
-    pagination: null as Record<string, any> | null,
-    modalType: null as string | null,
+    rawResponse: null as unknown,
+    pagination: null as PaginationMeta | null,
+
+    search: '',
+    category: 'all',
+    status: 'all',
+
+    modalType: null as 'add' | 'edit' | 'view' | 'delete' | null,
     selectedProduct: null as Product | null,
-    search: '' as string,
+
     loading: false,
     error: null as string | null,
-    
-    // NEW: Add product options for dropdowns
-    productOptions: [] as Array<{
-      value: string | number
-      label: string
-      categories: string[]
-      brand?: string
-      retail_price: number
-      wholesale_price: number
-      store_id?: string
-      store_name?: string
-    }>,
+
+    allCategories: [] as { label: string; value: string }[],
+    allStores: [] as { label: string; value: string }[],
+
+    // ✅ store-scoped debounce
+    debounceTimer: null as ReturnType<typeof setTimeout> | null,
   }),
 
+  getters: {
+    currentPage: (s) => s.pagination?.current_page ?? 1,
+    totalPages: (s) => s.pagination?.last_page ?? 1,
+    paginationLinks: (s) => s.pagination?.links ?? [],
+
+    categoryOptions: (s) => [
+      { label: 'All Categories', value: 'all' },
+      ...s.allCategories,
+    ],
+
+    storeOptions: (s) => [
+      { label: 'All Stores', value: 'all' },
+      ...s.allStores,
+    ],
+  },
+
   actions: {
-    async fetchProducts(page: number = 1) {
-      this.loading = true
-      this.error = null
+    // Same signature → components remain untouched
+    setProducts(payload: any, categories: any[] = [], stores: any[] = []) {
+      this.rawResponse = payload
+      this.products = payload?.data ?? payload ?? []
+      this.pagination = payload?.meta ?? null
 
-      try {
-        const { data } = await axios.get(route('products.index'), {
-          params: { page, search: this.search }, 
+      this.allCategories = categories.map((c) => ({
+        label: c.name,
+        value: c.id,
+      }))
+
+      this.allStores = stores.map((s) => ({
+        label: s.name,
+        value: s.id,
+      }))
+    },
+
+    updateFilter(
+      key: 'search' | 'category' | 'status',
+      value: string
+    ) {
+      this[key] = value
+      this.applyFilters()
+    },
+
+    applyFilters() {
+      if (this.debounceTimer) {
+        clearTimeout(this.debounceTimer)
+      }
+
+      this.debounceTimer = setTimeout(() => {
+        const params: Record<string, any> = { page: 1 }
+
+        if (this.search) params.search = this.search
+        if (this.category !== 'all') params.category = this.category
+        if (this.status !== 'all') params.status = this.status
+
+        router.get(route('products.index'), params, {
+          preserveState: true,
+          preserveScroll: true,
+          only: ['data'],
         })
-
-        this.products = data.products.data || []
-        this.pagination = {
-          links: data.products.links,
-          meta: data.products.meta,
-        }
-        
-        // NEW: Also populate productOptions
-        this.productOptions = (data.products.data || []).map((p: any) => ({
-          value: p.id,
-          label: p.name,
-          categories: p.categories?.map((c: any) => c.name) ?? [],
-          brand: p.brand,
-          retail_price: Number(p.retail_price) || 0,
-          wholesale_price: Number(p.wholesale_price) || 0,
-          store_id: p.store?.id ?? null,
-          store_name: p.store?.name ?? null,
-        }))
-      } catch (error: any) {
-        console.error('Error fetching products:', error)
-        this.error = error.message || 'Failed to fetch products'
-      } finally {
-        this.loading = false
-      }
+      }, 400)
     },
 
-    // NEW: Specific method for fetching product options (lightweight for dropdowns)
-    async fetchProductOptions(storeId?: string) {
-      try {
-        const params: any = { per_page: 1000 } // Get all products for dropdown
-        if (storeId) params.store_id = storeId
+    changePage(page: number) {
+      const params: Record<string, any> = { page }
 
-        const { data } = await axios.get(route('products.index'), { params })
-        
-        this.productOptions = (data.products.data || []).map((p: any) => ({
-          value: p.id,
-          label: p.name,
-          categories: p.categories?.map((c: any) => c.name) ?? [],
-          brand: p.brand,
-          retail_price: Number(p.retail_price) || 0,
-          wholesale_price: Number(p.wholesale_price) || 0,
-          store_id: p.store?.id ?? null,
-          store_name: p.store?.name ?? null,
-        }))
-      } catch (error: any) {
-        console.error('Error fetching product options:', error)
-        this.error = error.message || 'Failed to fetch product options'
-      }
+      if (this.search) params.search = this.search
+      if (this.category !== 'all') params.category = this.category
+      if (this.status !== 'all') params.status = this.status
+
+      router.get(route('products.index'), params, {
+        preserveState: true,
+        preserveScroll: true,
+        only: ['data'],
+      })
     },
 
-    async deleteProduct(id: string) {
-      this.loading = true
-      this.error = null
-
-      try {
-        const { data } = await axios.delete(route('products.delete', id))
-
-        if (data.status) {
-          this.products = this.products.filter((s) => s.id !== id)
-          // NEW: Also remove from productOptions
-          this.productOptions = this.productOptions.filter((p) => p.value !== id)
-          this.closeModal()
-          await this.fetchProducts()
-        } else {
-          this.error = data.message || 'Failed to delete product'
-        }
-      } catch (error: any) {
-        console.error('Error deleting product:', error)
-        this.error = error.message || 'Failed to delete product'
-      } finally {
-        this.loading = false
-      }
+    openAdd() {
+      this.modalType = 'add'
+      this.selectedProduct = null
     },
 
-    openModal(type: string, product: Product | null = null) {
-      this.closeModal()
-      this.modalType = type
+    openView(product: Product) {
+      this.modalType = 'view'
+      this.selectedProduct = product
+    },
+
+    openEdit(product: Product) {
+      this.modalType = 'edit'
+      this.selectedProduct = product
+    },
+
+    openDelete(product: Product) {
+      this.modalType = 'delete'
       this.selectedProduct = product
     },
 
@@ -119,43 +133,102 @@ export const useProduct = defineStore('products', {
       this.selectedProduct = null
     },
 
-    // NEW: Helper methods for product calculations
-    getProductById(id: string | number) {
-      return this.products.find(p => p.id === id) || 
-             this.productOptions.find(p => p.value === id)
-    },
-
-    calculateProductPrice(productId: string | number, customerType: string): number {
-      const product = this.getProductById(productId)
-      if (!product) return 0
+    async createProduct(form: any) {
+      this.loading = true
       
-      const price = customerType === "wholesale" 
-        ? (product as any).wholesale_price || (product as any).price || 0
-        : (product as any).retail_price || (product as any).price || 0
-        
-      return Number(price) || 0
+      return new Promise((resolve, reject) => {
+        form.post(route('products.store'), {
+          forceFormData: true,
+          onSuccess: () => {
+            const page = usePage()
+            toast.success(page.props.flash?.message ?? 'Product created')
+            this.closeModal()
+            router.reload({ 
+              only: ['data'],
+              onFinish: () => {
+                this.loading = false
+                resolve(true)
+              }
+            })
+          },
+          onError: (errors: any) => {
+            this.loading = false
+            reject(errors)
+          },
+          onCancel: () => {
+            this.loading = false
+            reject(new Error('Request cancelled'))
+          }
+        })
+      })
     },
-  },
 
-  getters: {
-    isModalOpen: (state) => state.modalType !== null,
+    getProduct(id: string) {
+      return this.products.find(
+        (p) => String(p.id) === String(id)
+      )
+    },
+
+    async updateProduct(id: string, form: any) {
+      this.loading = true
+      
+      return new Promise((resolve, reject) => {
+        form.post(route('products.update', id), {
+          forceFormData: true,
+          preserveScroll: true,
+          onSuccess: () => {
+            const page = usePage()
+            toast.success(page.props.flash?.message ?? 'Product updated')
+            this.loading = false
+            this.closeModal()
+            router.reload({ 
+              only: ['data'],
+              onFinish: () => {
+                resolve(true)
+              }
+            })
+          },
+          onError: (errors: any) => {
+            this.loading = false
+            reject(errors)
+          },
+          onCancel: () => {
+            this.loading = false
+            reject(new Error('Request cancelled'))
+          }
+        })
+      })
+    },
     
-    // NEW: Get available products for dropdown (filtering out already selected ones)
-    getAvailableProductOptions: (state) => {
-      return (selectedIds: (string | number)[]) => {
-        return state.productOptions.filter((opt) => 
-          !selectedIds.map(String).includes(String(opt.value))
-        )
-      }
-    },
-
-    // NEW: Get products by store
-    productsByStore: (state) => {
-      return (storeId: string) => {
-        return state.productOptions.filter(product => 
-          !storeId || product.store_id === storeId
-        )
-      }
-    },
-  },
+    async deleteProduct(id: string) {
+      this.loading = true
+      this.error = null
+      
+      return new Promise((resolve, reject) => {
+        router.delete(route('products.delete', id), {
+          onSuccess: () => {
+            toast.success('Product deleted successfully')
+            this.closeModal()
+            router.reload({ 
+              only: ['data'],
+              onFinish: () => {
+                this.loading = false
+                resolve(true)
+              }
+            })
+          },
+          onError: (errors: any) => {
+            this.error = 'Failed to delete product'
+            this.loading = false
+            toast.error(this.error)
+            reject(errors)
+          },
+          onCancel: () => {
+            this.loading = false
+            reject(new Error('Request cancelled'))
+          }
+        })
+      })
+    }
+  }
 })

@@ -1,45 +1,37 @@
 <script setup lang="ts">
-import { onMounted } from "vue"
-import { Head, useForm, usePage } from "@inertiajs/vue3"
-import AppLayout from "@/layouts/AppLayout.vue"
-import ProductLayout from "@/layouts/products/Layout.vue"
-import { type BreadcrumbItem, type SharedData, type User } from "@/types"
-import ComponentCard from "@/components/ui/card/ComponentCard.vue"
-import ProductsTable from "@/components/ui/table/ProductsTable.vue"
-import AddProduct from "@/pages/products/AddProduct.vue"
-import EditProduct from "@/pages/products/EditProduct.vue"
-import ViewProduct from "@/pages/products/ViewProduct.vue"
-import DeleteProduct from "@/pages/products/DeleteProduct.vue"
-import { Button } from "@/components/ui/button"
-import { useProduct } from "@/stores/products"
-import { Briefcase } from "lucide-vue-next"
-import Pagination from "@/pages/components/Pagination.vue"
-import SearchInput from "@/pages/components/SeachInput.vue"
+import { onMounted, watch } from 'vue'
+import { Head } from '@inertiajs/vue3'
+import AppLayout from '@/layouts/AppLayout.vue'
+import ProductLayout from '@/layouts/products/Layout.vue'
+import { type BreadcrumbItem } from '@/types'
+import AddProduct from '@/pages/products/AddProduct.vue'
+import EditProduct from '@/pages/products/EditProduct.vue'
+import ViewProduct from '@/pages/products/ViewProduct.vue'
+import DeleteProduct from '@/pages/products/DeleteProduct.vue'
+import { Button } from '@/components/ui/button'
+import { useProduct } from '@/stores/products'
+import { Package } from 'lucide-vue-next'
+import ProductsTable from '@/pages/products/ProductsTable.vue'
 
-interface Props {
-  products?: unknown[]
-}
+const props = defineProps<{
+  data: any
+  categories: any
+  stores: any
+}>()
 
-defineProps<Props>()
-
-const breadcrumbs: BreadcrumbItem[] = [{ title: "Manage Products", href: "/products" }]
-
-const page = usePage<SharedData>()
-const authUser = page.props.auth.user as User
-
-const form = useForm({ name: authUser.name, email: authUser.email })
+const breadcrumbs: BreadcrumbItem[] = [
+  { title: 'Manage Products', href: '/products' },
+]
 
 const productStore = useProduct()
 
 onMounted(() => {
-  if (!productStore.products.length) {
-    productStore.fetchProducts()
-  }
+  productStore.setProducts(props.data, props.categories, props.stores)
 })
 
-const handleSearch = () => {
-  productStore.fetchProducts(1) 
-}
+watch(() => props.data, (newData) => {
+  productStore.setProducts(newData, props.categories, props.stores)
+}, { deep: true })
 </script>
 
 <template>
@@ -48,58 +40,38 @@ const handleSearch = () => {
 
     <ProductLayout>
       <template #button>
-        <Button @click="productStore.openModal('add')">
-          <Briefcase class="mr-2" />+ Add Product
+        <Button @click="productStore.openAdd()">
+          <Package class="mr-2 h-4 w-4" />
+          Add Product
         </Button>
       </template>
 
       <div class="space-y-5 sm:space-y-6">
-        <ComponentCard>
-          <!-- 🔍 Search input above the table -->
-          <div class="mb-4">
-            <SearchInput
-              v-model="productStore.search"
-              placeholder="Search products..."
-              @search="handleSearch"
-            />
-          </div>
-
-          <!-- Products Table -->
-          <ProductsTable
-            :data="productStore.products"
-            @edit="productStore.openModal('edit', $event)"
-            @view="productStore.openModal('view', $event)"
-            @delete="productStore.openModal('delete', $event)"
-          />
-
-          <!-- Pagination -->
-          <Pagination
-            v-if="productStore.pagination"
-            :links="productStore.pagination.links"
-            :meta="productStore.pagination.meta"
-            :onPageChange="page => productStore.fetchProducts(page)"
-          />
-        </ComponentCard>
+        <ProductsTable />
       </div>
 
-      <!-- Modals -->
+      <!-- MODALS -->
       <AddProduct
         v-if="productStore.modalType === 'add'"
-        @saved="productStore.fetchProducts()"
+        @saved="productStore.closeModal"
       />
+
       <EditProduct
         v-if="productStore.modalType === 'edit'"
         :product="productStore.selectedProduct"
-        @updated="productStore.fetchProducts()"
+        @updated="productStore.closeModal"
       />
+
       <ViewProduct
         v-if="productStore.modalType === 'view'"
         :product="productStore.selectedProduct"
+        @close="productStore.closeModal"
       />
+
       <DeleteProduct
         v-if="productStore.modalType === 'delete'"
         :product="productStore.selectedProduct"
-        @deleted="productStore.fetchProducts()"
+        @deleted="productStore.closeModal"
       />
     </ProductLayout>
   </AppLayout>

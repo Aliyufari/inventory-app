@@ -1,3 +1,13 @@
+<script setup lang="ts">
+interface Props {
+  title?: string
+  desc?: string
+  className?: string
+}
+
+defineProps<Props>()
+</script>
+
 <template>
   <div
     :class="[
@@ -39,13 +49,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-interface Props {
-  title?: string
-  desc?: string
-  className?: string
-}
-
-defineProps<Props>()
-</script>

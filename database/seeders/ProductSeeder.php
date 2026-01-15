@@ -28,7 +28,7 @@ class ProductSeeder extends Seeder
             'cost' => 200,
             'retail_price' => 300,
             'wholesale_price' => 250,
-            'quantity' => 100,
+            // 'quantity' => 100,
             'store_id' => $store->id,
             'description' => '',
         ]);
@@ -42,7 +42,7 @@ class ProductSeeder extends Seeder
             'cost' => 200,
             'retail_price' => 300,
             'wholesale_price' => 250,
-            'quantity' => 100,
+            // 'quantity' => 100,
             'store_id' => $store->id,
             'description' => '',
         ]);

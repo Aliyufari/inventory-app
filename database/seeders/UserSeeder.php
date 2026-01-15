@@ -15,20 +15,55 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        $role = Role::firstOrCreate(['name' => 'super']);
+        $super = Role::firstOrCreate(['name' => 'super']);
+        $owner = Role::firstOrCreate(['name' => 'owner']);
+        $admin = Role::firstOrCreate(['name' => 'admin']);
+        $user = Role::firstOrCreate(['name' => 'user']);
+
         $stores = Store::all();
 
-        $user = User::firstOrCreate([
-            'name' => 'Alameen Pharmacy',
-            'email' => 'ap@email.com',
+        $superUser = User::firstOrCreate([
+            'name' => 'Aliyu Abubakar',
+            'email' => 'aliyufari@gmail.com',
             'gender' => 'male',
-            'status' => 'active',
+            'status' => true,
             'password' => Hash::make('password'),
-            'role_id' => $role->id,
+            'role_id' => $super->id,
         ]);
 
-        if ($stores->isNotEmpty() && method_exists($user, 'stores')) {
-            $user->stores()->syncWithoutDetaching($stores->pluck('id')->toArray());
+        $ownerUser = User::firstOrCreate([
+            'name' => 'Mukhtar Shehu',
+            'email' => 'mukhtarshehu@gmail.com',
+            'gender' => 'male',
+            'status' => true,
+            'password' => Hash::make('password'),
+            'role_id' => $owner->id,
+        ]);
+
+        $adminUser = User::firstOrCreate([
+            'name' => 'Hussaini',
+            'email' => 'hussaini@gmail.com',
+            'gender' => 'male',
+            'status' => true,
+            'password' => Hash::make('password'),
+            'role_id' => $admin->id,
+        ]);
+
+        $normalUser = User::firstOrCreate([
+            'name' => 'User',
+            'email' => 'user@email.com',
+            'gender' => 'male',
+            'status' => true,
+            'password' => Hash::make('password'),
+            'role_id' => $user->id,
+        ]);
+
+        if ($stores->isNotEmpty()) {
+            if ($stores->isNotEmpty()) {
+                foreach ([$superUser, $ownerUser, $adminUser, $normalUser] as $user) {
+                    $user->stores()->syncWithoutDetaching($stores->pluck('id')->toArray());
+                }
+            }
         }
     }
 }
