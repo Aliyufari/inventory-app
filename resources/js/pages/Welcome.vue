@@ -24,7 +24,7 @@ const submit = () => {
 </script>
 
 <template>
-  <Head title="Welcome - DYK Super Store" />
+  <Head title="AL-AMIN PHARMACY & STORE" />
 
   <div
     class="relative min-h-screen w-full bg-cover bg-center"
