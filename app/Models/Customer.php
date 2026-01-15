@@ -27,7 +27,7 @@ class Customer extends Model
 
     public function transactions(): HasMany
     {
-        return $this->hasMany(Inventory::class);
+        return $this->hasMany(Sale::class);
     }
 
     // Helper methods
