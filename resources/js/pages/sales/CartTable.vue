@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import Input from '@/components/ui/input/Input.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue';
 import { Trash2 } from 'lucide-vue-next'
 
-defineProps<{
+const props = defineProps<{
   items: any[]
   discount: number
   taxRate: number
@@ -20,18 +21,13 @@ const emit = defineEmits([
   'updateQty',
   'updateItemDiscount',
 ])
+
+// Reverse the items array to show newest items first
+const reversedItems = computed(() => [...props.items].reverse())
 </script>
 
 <template>
-  <!-- <div class="px-5 py-4 border-b bg-gray-50/50 flex justify-between items-center">
-    <h3 class="text-sm font-bold text-gray-700">
-      Checkout Summary
-    </h3>
-    <Wallet class="w-4 h-4 text-gray-400" />
-  </div>
-  <div class="bg-white border rounded-xl overflow-hidden"> -->
   <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden sticky top-6">
-    <!-- Make table horizontally scrollable on small screens -->
     <div class="overflow-x-auto">
       <table class="w-full text-sm table-fixed min-w-[700px]">
         <!-- Header -->
@@ -55,14 +51,14 @@ const emit = defineEmits([
             </td>
           </tr>
 
-          <!-- Items -->
+          <!-- Items - Reversed Order (Newest First) -->
           <tr
-            v-for="(item, index) in items"
+            v-for="(item, index) in reversedItems"
             :key="item.id"
             class="border-b last:border-b-0 hover:bg-gray-50 transition"
           >
-            <!-- Index -->
-            <td class="px-4 py-3 text-gray-700">{{ index + 1 }}</td>
+            <!-- Index - Show descending numbers -->
+            <td class="px-4 py-3 text-gray-700">{{ items.length - index }}</td>
 
             <!-- Product -->
             <td class="px-4 py-3">

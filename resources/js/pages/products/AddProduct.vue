@@ -23,10 +23,13 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
 const unitOptions = [
   { label: 'pcs', value: 'pcs' },
+  { label: 'bottle', value: 'bottle' },
+  { label: 'tablet', value: 'tablet' },
+  { label: 'sachet', value: 'sachet' },
+  { label: 'box', value: 'box' },
   { label: 'kg', value: 'kg' },
   { label: 'litre', value: 'litre' },
   { label: 'pack', value: 'pack' },
-  { label: 'box', value: 'box' },
 ]
 
 const imagePreview = ref<string | null>(null)

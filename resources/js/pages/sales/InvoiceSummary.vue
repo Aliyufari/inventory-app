@@ -89,21 +89,21 @@ const paymentOptions = [
 
       <div class="pt-6 space-y-4">
         <div class="space-y-1.5">
-          <label class="text-[11px] font-bold text-gray-400 uppercase ml-1">Customer</label>
-          <SearchableSelect
-            v-model="selectedCustomerId"
-            :options="customerOptions"
-            placeholder="Walk-in Customer"
-            class="w-full"
-          />
-        </div>
-
-        <div class="space-y-1.5">
           <label class="text-[11px] font-bold text-gray-400 uppercase ml-1">Payment Method</label>
           <SearchableSelect
             v-model="selectedPaymentMethod"
             :options="paymentOptions"
             placeholder="Select Method"
+            class="w-full"
+          />
+        </div>
+
+        <div class="space-y-1.5">
+          <label class="text-[11px] font-bold text-gray-400 uppercase ml-1">Customer</label>
+          <SearchableSelect
+            v-model="selectedCustomerId"
+            :options="customerOptions"
+            placeholder="Walk-in Customer"
             class="w-full"
           />
         </div>

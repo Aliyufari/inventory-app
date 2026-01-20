@@ -27,6 +27,7 @@ const showSearchResults = ref(false)
 const isMounted = ref(false)
 const showPreview = ref(false)
 const latestInvoice = ref(null)
+const searchBarRef = ref<InstanceType<typeof SearchBar> | null>(null)
 
 const form = useForm({
   customer_id: null, 
@@ -41,12 +42,10 @@ const form = useForm({
 })
 
 onMounted(() => {
-  // 1. Initialize Customers from Props
   if (props.customers?.length) {
     pos.customers = props.customers
   }
 
-  // 2. Initialize Products from Props
   if (props.products?.length) {
     pos.productOptions = props.products.map(p => ({ 
       ...p, 
@@ -58,10 +57,10 @@ onMounted(() => {
   setTimeout(() => (isMounted.value = true), 50)
 })
 
-// --- Search & Barcode Logic ---
 const handleSearch = (query: string) => {
   if (!query || query.length < 2) {
     showSearchResults.value = false
+    searchResults.value = []
     return
   }
   searchResults.value = pos.handleProductSearch(query)
@@ -75,31 +74,30 @@ const handleBarcodeScanned = (barcode: string) => {
     toast.error("Product not found", { description: barcode })
   }
   showSearchResults.value = false
+  searchResults.value = []
+  searchBarRef.value?.clearInput()
 }
 
 const selectProduct = (product: any) => {
   pos.addOrIncrementProduct(product)
   showSearchResults.value = false
+  searchResults.value = []
+  searchBarRef.value?.clearInput()
 }
 
-// --- Order Submission ---
 const handlePay = () => {
-  // 1. Validation Check
   if (!pos.items || pos.items.length === 0) {
     return toast.error("Cart is empty. Please add products.")
   }
 
-  // 2. Map the items correctly
   const mappedItems = pos.items.map(item => ({
     product_id: item.product_id, 
     quantity: item.qty, 
     unit_price: item.price, 
-    // Calculate total for this line item
     total: (item.qty * item.price) - (item.discount || 0), 
     discount: item.discount || 0
   }))
 
-  // 3. Assign to form
   form.customer_id = pos.customer?.id || null
   form.is_credit = !!pos.customer
   form.total = pos.total
@@ -108,20 +106,15 @@ const handlePay = () => {
   form.payment_method = pos.paymentMethod
   form.customer_type = pos.priceMode
   form.note = pos.note
-  form.items = mappedItems // Ensure this is set!
+  form.items = mappedItems
 
-  // DEBUG: Check this in your console before the request goes out
   console.log("Submitting items:", form.items)
 
-  // 4. Send Request
   form.post(route('sales.store'), {
     preserveScroll: true,
     onSuccess: (page) => {
-      // Capture names before clearing
       const customerName = pos.customer?.name || 'Walk-in'
       const userName = page.props.auth?.user?.name || 'Staff'
-      
-      // Get the invoice object returned from Laravel
       const invoiceData = page.props.invoice
 
       pos.clear()
@@ -157,6 +150,7 @@ const handlePay = () => {
 
       <div class="relative flex-1">
         <SearchBar 
+          ref="searchBarRef"
           :resultsCount="searchResults.length" 
           @productSearch="handleSearch" 
           @barcodeScanned="handleBarcodeScanned" 

@@ -1,15 +1,26 @@
 <script setup lang="ts">
-import { ref, nextTick, onUnmounted, watch } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted, watch, defineExpose } from 'vue'
 import { Search, Camera, X, Scan } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { toast } from 'vue-sonner'
 import { Html5Qrcode } from 'html5-qrcode'
 
 const props = defineProps<{
-  resultsCount: number // Pass the length of searchResults from the parent
+  resultsCount: number
 }>()
 
 const emit = defineEmits(['barcodeScanned', 'productSearch'])
+
+// Expose method to parent to clear input
+const clearInput = () => {
+  SearchableInput.value = ''
+  nextTick(() => {
+    SearchableInputRef.value?.focus()
+  })
+}
+
+defineExpose({ clearInput })
+
 const SearchableInput = ref('')
 const SearchableInputRef = ref<HTMLInputElement | null>(null)
 const inputMode = ref<'typing' | 'scanning'>('typing')
@@ -17,12 +28,20 @@ const showCamera = ref(false)
 let html5QrCode: Html5Qrcode | null = null
 let debounceTimer: any = null
 
+// Auto-focus on mount
+onMounted(() => {
+  SearchableInputRef.value?.focus()
+})
+
 // Watch the results count: If a unique item is found, clear the input
 watch(() => props.resultsCount, (newCount) => {
   if (newCount === 1 && inputMode.value === 'typing') {
-    // We delay slightly so the user sees the match before it clears
     setTimeout(() => {
       SearchableInput.value = ''
+      // Re-focus after clearing
+      nextTick(() => {
+        SearchableInputRef.value?.focus()
+      })
     }, 500)
   }
 })
@@ -43,6 +62,10 @@ const handleInput = () => {
       emit('barcodeScanned', val)
       SearchableInput.value = ''
       inputMode.value = 'typing'
+      // Re-focus after barcode scan
+      nextTick(() => {
+        SearchableInputRef.value?.focus()
+      })
     }, 150)
   } else {
     inputMode.value = 'typing'
@@ -54,6 +77,10 @@ const toggleCamera = async () => {
   if (showCamera.value) {
     await html5QrCode?.stop()
     showCamera.value = false
+    // Re-focus input when camera closes
+    nextTick(() => {
+      SearchableInputRef.value?.focus()
+    })
   } else {
     showCamera.value = true
     await nextTick()
@@ -83,7 +110,6 @@ onUnmounted(() => html5QrCode?.stop())
         v-else
         class="absolute left-4 top-1/2 -translate-y-1/2 text-green-500 animate-pulse w-5 h-5"
       />
-
       <input
         ref="SearchableInputRef"
         v-model="SearchableInput"
